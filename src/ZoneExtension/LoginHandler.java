@@ -59,10 +59,16 @@ public class LoginHandler extends BaseClientRequestHandler
 					response.putSFSObject("info", getUserInfo(params.getUtfString("email")));
 				}
 				else if(pwd.compareTo(params.getUtfString("password")) == 0) {
-					response.putBool("daily_bonus", setDailyBonus(user, obj));
-					sendNotificationToFriends(params.getUtfString("email"), res.getSFSObject(0).getUtfString("name"));
-					response.putBool("success", true);
-					response.putSFSObject("info", getUserInfo(params.getUtfString("email")));
+					User oldUser = getParentExtension().getParentZone().getUserByName(params.getUtfString("email"));
+					if (oldUser != null) {
+						response.putBool("success", false);
+						response.putUtfString("reason", "relogin");
+					} else {
+						response.putBool("daily_bonus", setDailyBonus(user, obj));
+						sendNotificationToFriends(params.getUtfString("email"), res.getSFSObject(0).getUtfString("name"));
+						response.putBool("success", true);
+						response.putSFSObject("info", getUserInfo(params.getUtfString("email")));
+					}
 				}
 				else {
 					response.putBool("success", false);
