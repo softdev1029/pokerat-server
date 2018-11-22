@@ -2,12 +2,16 @@ package TexasPokerExtension;
 
 import java.math.BigDecimal;
 import java.sql.SQLException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import java.util.TimeZone;
 import java.util.Timer;
 import java.util.TimerTask;
+
 import TexasPokerEngine.Card;
 import TexasPokerEngine.Client;
 import TexasPokerEngine.Hand;
@@ -63,6 +67,8 @@ public class RoomExtension extends SFSExtension implements Client {
 	private final Object monitor = new Object();
 	private boolean prevShow = false;
 
+	private String dailyHandError;
+	
 	public static class TableInfo {
 		public long blind;
 		public long minBuyin, maxBuyin;
@@ -1042,15 +1048,98 @@ public class RoomExtension extends SFSExtension implements Client {
 
 	public void addPlayerChipcount(String email, long value) {
 		long chip = getPlayerChipcount(email);
-		setPlayerChipcount(email, chip + value);
+		update_daily_hand(email, value);		
+		setPlayerChipcount(email, chip + value);		
 	}
 
 	public void payPlayerChipcount(String email, long value) {
 		long chip = getPlayerChipcount(email);
+		if(chip >= value)
+			update_daily_hand(email, -value);
+		else
+			update_daily_hand(email, -chip);
 		chip -= value;
 		if (chip < 0)
 			chip = 0;
 		setPlayerChipcount(email, chip);
+	}
+
+	public void update_daily_hand(String email, long value) {		
+		long curTime = System.currentTimeMillis();
+		Date curDate = new Date(curTime);
+		Date endDate = new Date(curDate.getYear(), curDate.getMonth(), curDate.getDate(), 14, 0, 0); //2:00 PM
+		if(curDate.after(endDate))
+			curDate.setDate(curDate.getDate() + 1);
+		SimpleDateFormat dateFormatGmt = new SimpleDateFormat("yyyy-MM-dd");
+		dateFormatGmt.setTimeZone(TimeZone.getTimeZone("GMT"));
+		String dateStr = dateFormatGmt.format(curDate);
+		
+		dailyHandError = "";
+		int curGain = getPlayerDateGain(email, dateStr);
+		if(curGain == 0) {
+			if(dailyHandError == "Not Found") // not exist
+				insert_daily_gain(email, dateStr, (int)value);
+			else if(dailyHandError == "") // exist, but gain is 0
+				update_daily_gain(email, dateStr, (int)value);
+		}
+		else {
+			curGain += value;
+			update_daily_gain(email, dateStr, curGain);			
+		}
+	}
+	
+	public void update_daily_gain(String email, String dateStr, int value) {
+		IDBManager dbManager = getParentZone().getDBManager();
+		
+		String sql = "UPDATE daily_hand SET gain=" + value + " WHERE email=\"" + email
+				 + "\" AND gain_date=\"" + dateStr
+				 + "\"";
+
+		try {
+			dbManager.executeUpdate(sql, new Object[] {});
+		} catch (SQLException e) {
+			trace(ExtensionLogLevel.WARN, "SQL Failed: " + e.toString());
+		}					
+	}
+	
+	public void insert_daily_gain(String email, String dateStr, int value) {
+		IDBManager dbManager = getParentZone().getDBManager();
+
+		String sql = "INSERT INTO daily_hand(email, gain_date, gain)"
+				+ " VALUES (\""
+				+ email + "\",\""
+				+ dateStr + "\",\""
+				+ value + "\")";
+        try {
+            dbManager.executeUpdate(sql, new Object[] {});
+        }
+        catch (SQLException e) {
+            trace(ExtensionLogLevel.WARN, "SQL Failed: " + e.toString());
+        }				
+	}
+	
+	public int getPlayerDateGain(String email, String dateStr) {
+		int gain = 0;
+		IDBManager dbManager = getParentZone().getDBManager();
+		// System.out.println(email);
+		String sql = "SELECT gain FROM daily_hand WHERE email=\"" + email
+				 + "\" AND gain_date=\"" + dateStr
+				 + "\"";
+		try {
+			ISFSArray res = dbManager.executeQuery(sql, new Object[] {});
+			if(res.size() > 0) {
+				gain = res.getSFSObject(0).getInt("gain");
+			}
+			else {
+				gain = 0;
+				dailyHandError = "Not Found";
+			}
+		} catch (SQLException e) {
+			trace(ExtensionLogLevel.WARN, "SQL Failed: " + e.toString());
+			gain = 0;
+			dailyHandError = "SQL Failed";
+		}
+		return gain;		
 	}
 
 	public void setPlayerChipcount(String email, long value) {
