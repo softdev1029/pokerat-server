@@ -33,6 +33,8 @@ public class ZoneExtension extends SFSExtension {
 		addRequestHandler("get_new_message", GetNewMessageHandler.class);
 		addRequestHandler("get_message", GetMessageHandler.class);
 		addRequestHandler("read_new_message", ReadNewMessageHandler.class);
+		
+		addRequestHandler("create_private_table", CreatePrivateRoomHandler.class);		
 	}
 	
 	@Override

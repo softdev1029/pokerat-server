@@ -27,7 +27,7 @@ public class GetRoomListHandler extends BaseClientRequestHandler
 				continue;
 //			System.out.println(room.getName() + "," + room.getGroupId() + "," + room.getExtension());
 			ISFSObject obj = (ISFSObject) room.getExtension().handleInternalMessage("get_room_info", null);
-			if(obj.getInt("type") == type)
+			if(obj != null && obj.getInt("type") == type)
 			{
 				if(type == 0) {
 					if(blind >= 10000000 && obj.getLong("blind") >= 10000000)
@@ -39,7 +39,7 @@ public class GetRoomListHandler extends BaseClientRequestHandler
 					res.addSFSObject(obj);
 			}
 		}
-		ISFSObject response = new SFSObject();
+		ISFSObject response = new SFSObject();	
 		response.putSFSArray("array", res);
 		send("get_room_list", response, user);
 	}

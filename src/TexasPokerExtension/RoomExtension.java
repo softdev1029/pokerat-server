@@ -69,6 +69,8 @@ public class RoomExtension extends SFSExtension implements Client {
 
 	private String dailyHandError;
 	
+	public boolean isPrivate = false;
+	
 	public static class TableInfo {
 		public long blind;
 		public long minBuyin, maxBuyin;
@@ -113,6 +115,9 @@ public class RoomExtension extends SFSExtension implements Client {
 		RoomVariable emptyVal = this.getParentRoom().getVariable("empty");
 		if(emptyVal != null)
 			isEmpty = emptyVal.getBoolValue();
+		RoomVariable is_private_table = this.getParentRoom().getVariable("is_private_table");
+		if(is_private_table != null && is_private_table.getBoolValue() == true)
+			isPrivate = true;
 
 		bigBlind = BigDecimal.valueOf(TEXAS_INFO[blindType].blind);
 		minBuyin = BigDecimal.valueOf(TEXAS_INFO[blindType].minBuyin);
@@ -134,6 +139,8 @@ public class RoomExtension extends SFSExtension implements Client {
 	@Override
 	public Object handleInternalMessage(String cmdName, Object params) {
 		if (cmdName.equals("get_room_info")) {
+			if(isPrivate)
+				return null;
 			ISFSObject obj = new SFSObject();
 			obj.putUtfString("name", getParentRoom().getName());
 			obj.putInt("type", 0); // TexasPoker
