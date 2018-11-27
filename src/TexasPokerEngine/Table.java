@@ -552,15 +552,19 @@ public class Table {
 									winner = player;
 							}
 							BigDecimal amount = getTotalPot();
-							winner.win(amount);
-
+							BigDecimal realAmount = amount.multiply(new BigDecimal(95)).divide(new BigDecimal(100));
+							winner.win(realAmount);
+							
 							Hand hand = new Hand(board);
 							hand.addCards(winner.getCards());
 							HandValue handValue = new HandValue(hand);
 
-							gameExt.updateHandHistory(winner.getName(), amount.longValue(), handValue);
-							gameExt.payWinnerChips(winner, amount.longValue(), handValue);
+							gameExt.updateHandHistory(winner.getName(), realAmount.longValue(), handValue);
+							gameExt.payWinnerChips(winner, realAmount.longValue(), handValue, (long)0);
 
+							BigDecimal dealerShare = amount.subtract(realAmount);
+							long dealerShareValue = dealerShare.longValue();
+							
 							showPlayer = winner;
 							winner.isShow = true;
 							winner.isWinner = true;
@@ -869,13 +873,35 @@ public class Table {
 
 		// Divide winnings.
 		StringBuilder winnerText = new StringBuilder();
-		BigDecimal totalWon = BigDecimal.ZERO;
+		BigDecimal totalRealPot = totalPot.multiply(new BigDecimal(95)).divide(new BigDecimal(100));
 		
 		for (Player winner : potDivision.keySet()) {
 			gameExt.showWinnerCards(winner);
 			delayTimer(2);
 		}
 		
+		BigDecimal totalWon = BigDecimal.ZERO;
+		for (Player winner : potDivision.keySet()) {
+			BigDecimal potShare = potDivision.get(winner);
+			BigDecimal potRealShare = potShare.multiply(new BigDecimal(95)).divide(new BigDecimal(100));
+			potDivision.put(winner, potRealShare);
+			totalWon = totalWon.add(potRealShare);
+		}
+		
+		// if odded chips, distribute it
+		BigDecimal oddChips = totalRealPot.subtract(totalWon);
+		pos = dealerPosition;
+		while (oddChips.compareTo(BigDecimal.ZERO) > 0) {
+			pos = getNextActivePos(pos);
+			Player winner = players[pos];
+			BigDecimal oldShare = potDivision.get(winner);
+			if (oldShare != null) {
+				potDivision.put(winner, oldShare.add(BigDecimal.ONE));
+				oddChips = oddChips.subtract(BigDecimal.ONE);
+			}
+		}
+		
+		totalWon = BigDecimal.ZERO;
 		for (Player winner : potDivision.keySet()) {
 			BigDecimal potShare = potDivision.get(winner);
 			winner.win(potShare);
@@ -889,8 +915,10 @@ public class Table {
 			hand.addCards(winner.getCards());
 			HandValue handValue = new HandValue(hand);
 
+			BigDecimal remainPot = totalRealPot.subtract(totalWon);
+
 			gameExt.updateHandHistory(winner.getName(), potShare.longValue(), handValue);
-			gameExt.payWinnerChips(winner, potShare.longValue(), handValue);
+			gameExt.payWinnerChips(winner, potShare.longValue(), handValue, remainPot.longValue());
 
 			showPlayer = winner;
 			winner.isShow = true;
@@ -898,9 +926,13 @@ public class Table {
 			gameExt.showBestCards();
 			winner.isWinner = false;
 			showPlayer = null;
+
 			delayTimer(4);
 		}
 
+		BigDecimal dealerShare = totalPot.subtract(totalWon);
+		long dealerShareValue = dealerShare.longValue();
+		
 		gameExt.hideWinners();
 		delayTimer(0.5f);
 

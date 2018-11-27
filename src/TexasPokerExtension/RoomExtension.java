@@ -773,13 +773,14 @@ public class RoomExtension extends SFSExtension implements Client {
 			send("texas_show_winner_cards", obj, getParentRoom().getUserList());
 	}
 	
-	public void payWinnerChips(Player player, Long pot, HandValue handValue)
+	public void payWinnerChips(Player player, Long pot, HandValue handValue, Long remainPot)
 	{
 		Card[] cards = player.getCards();
 		ISFSObject obj = new SFSObject();
 		obj.putInt("pos", player.getPos());
 		obj.putLong("chip", player.getCash().longValue());
 		obj.putLong("pot", pot);
+		obj.putLong("remain_pot", remainPot);
 		obj.putInt("card1", cards[0].hashCode());
 		obj.putInt("card2", cards[1].hashCode());
 		obj.putUtfString("hand", handValue.getDescription());
