@@ -27,7 +27,9 @@ public class LoginHandler extends BaseClientRequestHandler
 			if(res.size() == 0) {
 				if(params.getBool("facebook"))
 				{
-					ISFSObject obj = registerFacebookUser(params);
+					ISFSObject obj = registerFacebookUser(params);								
+					
+					response.putBool("first_login", isFirstLogin(user, obj));
 					response.putBool("daily_bonus", setDailyBonus(user, obj));
 					sendNotificationToFriends(params.getUtfString("email"), obj.getUtfString("name"));
 					response.putBool("success", true);
@@ -36,7 +38,9 @@ public class LoginHandler extends BaseClientRequestHandler
 				else if(params.getBool("guest"))
 				{
 					ISFSObject obj = registerGuest(params);
+					
 					response.putBool("daily_bonus", setDailyBonus(user, obj));
+					response.putBool("first_login", isFirstLogin(user, obj));
 					sendNotificationToFriends(params.getUtfString("email"), obj.getUtfString("name"));
 					response.putBool("success", true);
 					response.putSFSObject("info", getUserInfo(params.getUtfString("email")));
@@ -53,22 +57,20 @@ public class LoginHandler extends BaseClientRequestHandler
 				if(params.getBool("facebook"))
 				{
 					ISFSObject obj1 = updateFacebookUser(params);
+					
 					response.putBool("daily_bonus", setDailyBonus(user, obj1));
+					response.putBool("first_login", isFirstLogin(user, obj1));
 					sendNotificationToFriends(params.getUtfString("email"), obj1.getUtfString("name"));
 					response.putBool("success", true);
 					response.putSFSObject("info", getUserInfo(params.getUtfString("email")));
 				}
 				else if(pwd.compareTo(params.getUtfString("password")) == 0) {
-					User oldUser = getParentExtension().getParentZone().getUserByName(params.getUtfString("email"));
-					if (oldUser != null) {
-						response.putBool("success", false);
-						response.putUtfString("reason", "relogin");
-					} else {
-						response.putBool("daily_bonus", setDailyBonus(user, obj));
-						sendNotificationToFriends(params.getUtfString("email"), res.getSFSObject(0).getUtfString("name"));
-						response.putBool("success", true);
-						response.putSFSObject("info", getUserInfo(params.getUtfString("email")));
-					}
+					
+					response.putBool("daily_bonus", setDailyBonus(user, obj));
+					response.putBool("first_login", isFirstLogin(user, obj));
+					sendNotificationToFriends(params.getUtfString("email"), res.getSFSObject(0).getUtfString("name"));
+					response.putBool("success", true);
+					response.putSFSObject("info", getUserInfo(params.getUtfString("email")));
 				}
 				else {
 					response.putBool("success", false);
@@ -76,6 +78,30 @@ public class LoginHandler extends BaseClientRequestHandler
 				}
 			}
 			send("login", response, user);
+		} catch (SQLException e) {
+			trace(ExtensionLogLevel.WARN, "SQL Failed: " + e.toString());
+		}
+	}
+	
+	public boolean isFirstLogin(User user, ISFSObject dataObject) {
+		if(dataObject == null)
+			return false;
+		
+		if(dataObject.getLong("last_login") == 0)
+		{
+			setBonusNewAccount(user, dataObject);
+			return true;
+		}			
+		
+		return false;
+	}
+	
+	public void setBonusNewAccount(User user, ISFSObject dataObject)
+	{
+		IDBManager dbManager = getParentExtension().getParentZone().getDBManager();
+		String sql = "UPDATE user SET chip=" + (dataObject.getLong("chip") + 750) + ", coin=" + (dataObject.getLong("coin") + 100) + " WHERE email=\"" + dataObject.getUtfString("email") + "\"";
+		try {
+			dbManager.executeUpdate(sql, new Object[] {});
 		} catch (SQLException e) {
 			trace(ExtensionLogLevel.WARN, "SQL Failed: " + e.toString());
 		}
