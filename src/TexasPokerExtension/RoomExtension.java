@@ -393,7 +393,7 @@ public class RoomExtension extends SFSExtension implements Client {
 	}
 
 	public void updateAll() {
-		updateBoard(0);
+		updateBoard(0, false);
 		updatePlayers(prevShow, false);
 		showBestCards();
 		if (table.isRunning()) {
@@ -541,7 +541,7 @@ public class RoomExtension extends SFSExtension implements Client {
 		send("texas_setactor", resObj, getParentRoom().getUserByName(playerToNotify.getEmail()));
 	}
 
-	public void updateBoard(int dealRound) {
+	public void updateBoard(int dealRound, boolean isLast) {
 		ISFSObject resObj = new SFSObject();
 		List<Integer> cardArray = new ArrayList<Integer>();
 		for (Card card : table.board) {
@@ -556,9 +556,11 @@ public class RoomExtension extends SFSExtension implements Client {
 		resObj.putIntArray("cards", cardArray);
 		resObj.putLong("pot", pot);
 		resObj.putInt("dealround", dealRound);
+		resObj.putBool("isLast", isLast);
 
 		if (getParentRoom().getUserList().size() > 0)
 			send("texas_updateboard", resObj, getParentRoom().getUserList());
+		
 	}
 
 	@Override
@@ -1083,12 +1085,12 @@ public class RoomExtension extends SFSExtension implements Client {
 		String dateStr = dateFormatGmt.format(curDate);
 		
 		dailyHandError = "";
-		int curGain = getPlayerDateGain(email, dateStr);
+		long curGain = getPlayerDateGain(email, dateStr);
 		if(curGain == 0) {
 			if(dailyHandError == "Not Found") // not exist
-				insert_daily_gain(email, dateStr, (int)value);
+				insert_daily_gain(email, dateStr, value);
 			else if(dailyHandError == "") // exist, but gain is 0
-				update_daily_gain(email, dateStr, (int)value);
+				update_daily_gain(email, dateStr, value);
 		}
 		else {
 			curGain += value;
@@ -1096,7 +1098,7 @@ public class RoomExtension extends SFSExtension implements Client {
 		}
 	}
 	
-	public void update_daily_gain(String email, String dateStr, int value) {
+	public void update_daily_gain(String email, String dateStr, long value) {
 		IDBManager dbManager = getParentZone().getDBManager();
 		
 		String sql = "UPDATE daily_hand SET gain=" + value + " WHERE email=\"" + email
@@ -1110,7 +1112,7 @@ public class RoomExtension extends SFSExtension implements Client {
 		}					
 	}
 	
-	public void insert_daily_gain(String email, String dateStr, int value) {
+	public void insert_daily_gain(String email, String dateStr, long value) {
 		IDBManager dbManager = getParentZone().getDBManager();
 
 		String sql = "INSERT INTO daily_hand(email, gain_date, gain)"
@@ -1126,8 +1128,8 @@ public class RoomExtension extends SFSExtension implements Client {
         }				
 	}
 	
-	public int getPlayerDateGain(String email, String dateStr) {
-		int gain = 0;
+	public long getPlayerDateGain(String email, String dateStr) {
+		long gain = 0;
 		IDBManager dbManager = getParentZone().getDBManager();
 		// System.out.println(email);
 		String sql = "SELECT gain FROM daily_hand WHERE email=\"" + email
@@ -1136,7 +1138,7 @@ public class RoomExtension extends SFSExtension implements Client {
 		try {
 			ISFSArray res = dbManager.executeQuery(sql, new Object[] {});
 			if(res.size() > 0) {
-				gain = res.getSFSObject(0).getInt("gain");
+				gain = res.getSFSObject(0).getLong("gain");
 			}
 			else {
 				gain = 0;

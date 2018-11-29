@@ -1,26 +1,17 @@
 package ZoneExtension;
 
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.smartfoxserver.v2.entities.Room;
-import com.smartfoxserver.v2.entities.SFSRoom;
+import com.smartfoxserver.v2.api.CreateRoomSettings;
+import com.smartfoxserver.v2.api.CreateRoomSettings.RoomExtensionSettings;
 import com.smartfoxserver.v2.entities.User;
-import com.smartfoxserver.v2.entities.data.ISFSArray;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
-import com.smartfoxserver.v2.entities.data.SFSArray;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 import com.smartfoxserver.v2.entities.variables.RoomVariable;
 import com.smartfoxserver.v2.entities.variables.SFSRoomVariable;
-import com.smartfoxserver.v2.entities.variables.SFSUserVariable;
 import com.smartfoxserver.v2.exceptions.SFSCreateRoomException;
-import com.smartfoxserver.v2.exceptions.SFSTooManyRoomsException;
-import com.smartfoxserver.v2.exceptions.SFSVariableException;
 import com.smartfoxserver.v2.extensions.BaseClientRequestHandler;
-import com.smartfoxserver.v2.api.CreateRoomSettings;
-import com.smartfoxserver.v2.api.CreateRoomSettings.RoomExtensionSettings;
-import com.smartfoxserver.v2.api.SFSApi;
 
 public class CreatePrivateRoomHandler extends BaseClientRequestHandler
 {
@@ -29,7 +20,6 @@ public class CreatePrivateRoomHandler extends BaseClientRequestHandler
 	{
  		String tableName = params.getUtfString("table_name");
 		int blind = params.getInt("blind");
-		int type = params.getInt("type");
 		int seat = params.getInt("size");
 		boolean speed = params.getBool("speed");
 		
@@ -57,7 +47,7 @@ public class CreatePrivateRoomHandler extends BaseClientRequestHandler
 		
 		ISFSObject response = new SFSObject();
 		try {
-			Room room = getApi().createRoom(((ZoneExtension)getParentExtension()).getParentZone(), settings, null);
+			getApi().createRoom(((ZoneExtension)getParentExtension()).getParentZone(), settings, null);
 
 			response.putBool("success", true);
 			response.putUtfString("table_name", tableName);

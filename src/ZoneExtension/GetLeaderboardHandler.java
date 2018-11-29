@@ -2,11 +2,10 @@ package ZoneExtension;
 
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
-import java.util.List;
+import java.util.Date;
 import java.util.TimeZone;
 
 import com.smartfoxserver.v2.db.IDBManager;
-import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSArray;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
@@ -14,8 +13,6 @@ import com.smartfoxserver.v2.entities.data.SFSArray;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 import com.smartfoxserver.v2.extensions.BaseClientRequestHandler;
 import com.smartfoxserver.v2.extensions.ExtensionLogLevel;
-
-import java.util.Date;
 
 public class GetLeaderboardHandler extends BaseClientRequestHandler {
 	@SuppressWarnings("deprecation")

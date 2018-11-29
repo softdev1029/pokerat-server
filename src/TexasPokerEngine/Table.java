@@ -202,9 +202,6 @@ public class Table {
 		resetHand();
 
 		// Small blind.
-		if (activePlayerSize() > 2) {
-			rotateActor();
-		}
 		postSmallBlind();
 
 		// Big blind.
@@ -285,7 +282,7 @@ public class Table {
 
 		showPlayer = null;
 		gameExt.hideBestCards();
-		gameExt.updateBoard(4);
+		gameExt.updateBoard(4, false);
 
 		// Rotate the dealer button.
 		dealerPosition = getNextActivePos(dealerPosition);
@@ -451,7 +448,7 @@ public class Table {
 			if (player.playerStatus == PlayerStatus.ACTIVE && player.isActive)
 				player.raise = 0;
 		}
-		gameExt.updateBoard(round);
+		gameExt.updateBoard(round, false);
 		gameExt.showBestCards();
 		delayTimer(0.5f);
 		if (playersToAct > 1) {
@@ -560,6 +557,7 @@ public class Table {
 							HandValue handValue = new HandValue(hand);
 
 							gameExt.updateHandHistory(winner.getName(), realAmount.longValue(), handValue);
+							gameExt.updateBoard(round, true);
 							gameExt.payWinnerChips(winner, realAmount.longValue(), handValue, (long)0);
 
 							BigDecimal dealerShare = amount.subtract(realAmount);
@@ -901,6 +899,7 @@ public class Table {
 			}
 		}
 		
+		gameExt.updateBoard(3, true);
 		totalWon = BigDecimal.ZERO;
 		for (Player winner : potDivision.keySet()) {
 			BigDecimal potShare = potDivision.get(winner);
@@ -966,7 +965,7 @@ public class Table {
 	 * Notifies clients that the board has been updated.
 	 */
 	private void notifyBoardUpdated() {
-		gameExt.updateBoard(0);
+		gameExt.updateBoard(0, false);
 		gameExt.showBestCards();
 	}
 
