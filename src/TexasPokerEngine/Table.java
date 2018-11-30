@@ -307,7 +307,7 @@ public class Table {
 		// Notify all clients a new hand has started.
 		// gameExt.setBlind(dealer, "(D)");
 		// gameExt.setBlind(dealer, 0);
-		gameExt.setDealer(dealer.getPos());
+		//gameExt.setDealer(dealer.getPos());
 		// dealer.setAction(Action.ANTE);
 		dealerPos = dealer.getPos();
 		// notifyPlayersUpdated(false);
@@ -541,6 +541,9 @@ public class Table {
 						bet = bet.add(actor.getBet());
 						contributePot(actor.getBet());
 						if (activePlayerSize() == 1) {
+							// board update due to update real pot and dealer pot
+							gameExt.updateBoard(round, true);
+							delayTimer(1.5f);
 							// Only one player left, so he wins the entire pot.
 							// notifyBoardUpdated();
 							Player winner = new Player();
@@ -557,7 +560,6 @@ public class Table {
 							HandValue handValue = new HandValue(hand);
 
 							gameExt.updateHandHistory(winner.getName(), realAmount.longValue(), handValue);
-							gameExt.updateBoard(round, true);
 							gameExt.payWinnerChips(winner, realAmount.longValue(), handValue, (long)0);
 
 							BigDecimal dealerShare = amount.subtract(realAmount);
@@ -730,6 +732,9 @@ public class Table {
 	 * Performs the showdown.
 	 */
 	private void doShowdown() {
+		// board update due to update real pot and dealer pot
+		gameExt.updateBoard(3, true);
+		delayTimer(1.5f);
 		// Determine show order; start with all-in players...
 		List<Player> showingPlayers = new ArrayList<>();
 		for (Pot pot : pots) {
@@ -899,7 +904,6 @@ public class Table {
 			}
 		}
 		
-		gameExt.updateBoard(3, true);
 		totalWon = BigDecimal.ZERO;
 		for (Player winner : potDivision.keySet()) {
 			BigDecimal potShare = potDivision.get(winner);

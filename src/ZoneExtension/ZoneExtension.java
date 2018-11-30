@@ -54,13 +54,15 @@ public class ZoneExtension extends SFSExtension {
 		obj.putBool("online", user != null);
 		if (user != null) {
 			Room room = user.getLastJoinedRoom();
-			obj.putUtfString("room_name", room.getGroupId());
-			if (room.getGroupId() == "TexasPoker"
-					|| room.getGroupId() == "Roulette") {
-				long balance = (long) room.getExtension()
-						.handleInternalMessage("get_user_balance",
-								obj.getUtfString("email"));
-				obj.putLong("chip", obj.getLong("chip") + balance);
+			if(room != null) {
+				obj.putUtfString("room_name", room.getGroupId());
+				if (room.getGroupId() == "TexasPoker"
+						|| room.getGroupId() == "Roulette") {
+					long balance = (long) room.getExtension()
+							.handleInternalMessage("get_user_balance",
+									obj.getUtfString("email"));
+					obj.putLong("chip", obj.getLong("chip") + balance);
+				}
 			}
 		}
 	}

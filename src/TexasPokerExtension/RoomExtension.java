@@ -129,10 +129,25 @@ public class RoomExtension extends SFSExtension implements Client {
 		{
 			Random rd = new Random();
 			BigDecimal botBuyin = minBuyin.add(maxBuyin).divide(BigDecimal.valueOf(2));
-			int pos1 = rd.nextInt(2), pos2 = rd.nextInt(2) + 2;
-			table.players[pos1].join(true, true, new BasicBot(0, 25), pos1, "Bot1", "Guest", 9, botBuyin, -1, 0);
-			table.players[pos2].join(true, true,  new BasicBot(25, 60), pos2, "Bot2", "Guest", 10, botBuyin, -1, 0);
-			table.players[4].join(true, true, new BasicBot(25, 90), 4, "Bot3", "Guest", 11, botBuyin, -1, 0);
+			if(tableSize == 5) {
+				int pos1 = rd.nextInt(2), pos2 = rd.nextInt(2) + 2;
+				table.players[pos1].join(true, true, new BasicBot(0, 25), pos1, "Bot1", "Guest", 9, botBuyin, -1, 0);
+				table.players[pos2].join(true, true,  new BasicBot(25, 60), pos2, "Bot2", "Guest", 10, botBuyin, -1, 0);
+				table.players[4].join(true, true, new BasicBot(25, 90), 4, "Bot3", "Guest", 11, botBuyin, -1, 0);
+			}
+			else if(tableSize == 9) {
+				int pos1 = rd.nextInt(5), pos2 = rd.nextInt(5) + 4;
+				int botNum = 0;
+				for(int i=0; i<9; i++) {
+					if(i != pos1 && i != pos2) {
+						botNum++;
+						String botName = "Bot" + botNum;
+						int tight = rd.nextInt(40);
+						int agree = tight + rd.nextInt(60);
+						table.players[i].join(true, true, new BasicBot(tight, agree), i, botName, "Guest", 8 + botNum, botBuyin, -1, 0);
+					}
+				}
+			}
 		}
 	}
 

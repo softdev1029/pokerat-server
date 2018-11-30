@@ -22,6 +22,8 @@ public class GetFriendRoomHandler extends BaseClientRequestHandler
 			if(!room.isGame() || room.getGroupId().compareTo("default") == 0)
 				continue;
 			ISFSObject obj = (ISFSObject) room.getExtension().handleInternalMessage("get_room_info", null);
+			if(obj == null)
+				continue;			
 			ISFSArray array = obj.getSFSArray("player_list");
 			for(int i = 0; i < array.size(); i ++) {
 				ISFSObject obj1 = array.getSFSObject(i);
