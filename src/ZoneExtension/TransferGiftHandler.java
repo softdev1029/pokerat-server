@@ -27,8 +27,9 @@ public class TransferGiftHandler extends BaseClientRequestHandler
 		long value = params.getLong("value");
 		
 		if(addTransferRecord(from_email, to_email, type, value)) {
-			User user1 = getParentExtension().getParentZone().getUserByName(to_email);
+			transferGift(from_email, to_email, type, value);
 			
+			User user1 = getParentExtension().getParentZone().getUserByName(to_email);			
 			// notify to user1
 			if(user1 != null)
 				notifyTransferGiftTo(user1, from_email, type, value);
@@ -98,5 +99,41 @@ public class TransferGiftHandler extends BaseClientRequestHandler
             trace(ExtensionLogLevel.WARN, "SQL Failed: " + e.toString());
         }
         return false;
+	}
+	
+	public void transferGift(String from_email, String to_email, int type, long value) {
+		IDBManager dbManager = getParentExtension().getParentZone().getDBManager();
+
+		ISFSObject user1 = getUserInfo(from_email);
+		ISFSObject user2 = getUserInfo(to_email);
+		if(type == 0) { // transfer chip
+			if(user1 != null) {
+				long chip = user1.getLong("chip");
+				if(chip < value)
+					value = chip;
+				
+				chip -= value;
+				String sql = "UPDATE user SET chip=" + chip + " WHERE email=\"" + from_email + "\"";				
+		        try {
+		            dbManager.executeUpdate(sql, new Object[] {});
+		        }
+		        catch (SQLException e) {
+		            trace(ExtensionLogLevel.WARN, "SQL Failed: " + e.toString());
+		        }
+			}
+			
+			if(user2 != null) {
+				long chip = user2.getLong("chip");
+				chip += value;
+				
+				String sql = "UPDATE user SET chip=" + chip + " WHERE email=\"" + to_email + "\"";
+		        try {
+		            dbManager.executeUpdate(sql, new Object[] {});
+		        }
+		        catch (SQLException e) {
+		            trace(ExtensionLogLevel.WARN, "SQL Failed: " + e.toString());
+		        }
+			}
+		}
 	}	
 }
