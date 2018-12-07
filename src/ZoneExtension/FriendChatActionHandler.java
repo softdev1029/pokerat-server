@@ -15,6 +15,11 @@ public class FriendChatActionHandler extends BaseClientRequestHandler
 	@Override
 	public void handleClientRequest(User user, ISFSObject params)
 	{
+		// debug by jbj 20180904
+		ZoneExtension zoneExt = (ZoneExtension)getParentExtension();
+		zoneExt.whereis();
+		//////////////////////////
+
 		String email = params.getUtfString("email");
 		String friend_email = params.getUtfString("friend_email");
 		int chat = params.getInt("chat");

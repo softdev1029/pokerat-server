@@ -14,6 +14,11 @@ public class SendMessageHandler extends BaseClientRequestHandler
 	@Override
 	public void handleClientRequest(User user, ISFSObject params)
 	{	
+		// debug by jbj 20180904
+		ZoneExtension zoneExt = (ZoneExtension)getParentExtension();
+		zoneExt.whereis();
+		//////////////////////////
+		
 		saveMessage(params);
 		
 		User user1 = getParentExtension().getParentZone().getUserByName(params.getUtfString("from"));

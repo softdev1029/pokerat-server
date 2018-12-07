@@ -15,6 +15,11 @@ public class GetNewMessageHandler extends BaseClientRequestHandler
 	@Override
 	public void handleClientRequest(User user, ISFSObject params)
 	{
+		// debug by jbj 20180904
+		ZoneExtension zoneExt = (ZoneExtension)getParentExtension();
+		zoneExt.whereis();
+		//////////////////////////
+		
 		IDBManager dbManager = getParentExtension().getParentZone().getDBManager();
 		String sql = "SELECT from_email FROM message WHERE to_email=\"" + user.getName() + "\" AND message_read=0 AND deleted_to=0";
 		try {

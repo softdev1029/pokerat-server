@@ -25,10 +25,12 @@ import TexasPokerAction.Action;
 import TexasPokerAction.BetAction;
 import TexasPokerAction.RaiseAction;
 import TexasPokerBot.BasicBot;
+import ZoneExtension.ZoneExtension;
 
 import com.smartfoxserver.v2.core.SFSEventType;
 import com.smartfoxserver.v2.db.IDBManager;
 import com.smartfoxserver.v2.entities.Room;
+import com.smartfoxserver.v2.entities.SFSZone;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSArray;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
@@ -66,11 +68,20 @@ public class RoomExtension extends SFSExtension implements Client {
 	private Action selectedAction;
 	private final Object monitor = new Object();
 	private boolean prevShow = false;
+	
+	public String roomName;
 
 	private String dailyHandError;
 	
 	public boolean isPrivate = false;
-	
+	// for debugging
+	public String whereis() {
+		StackTraceElement ste = Thread.currentThread().getStackTrace()[2];
+		String where = this.getGameRoom().getName() + ": " + ste.getClassName() + " " + ste.getMethodName() + " " + ste.getLineNumber() + " ";
+//		System.out.println(where);
+		return where;
+	}
+
 	public static class TableInfo {
 		public long blind;
 		public long minBuyin, maxBuyin;
@@ -89,7 +100,7 @@ public class RoomExtension extends SFSExtension implements Client {
 			new TableInfo(1000000, 10000000, 400000000), new TableInfo(2000000, 100000000, 1000000000),
 			new TableInfo(10000000, 200000000, 2000000000), new TableInfo(20000000, 400000000, 4000000000l),
 			new TableInfo(50000000, 1000000000, 10000000000l), new TableInfo(100000000, 2000000000, 20000000000l), };
-
+	
 	@Override
 	public void init() {
 		addRequestHandler("texas_ready", ReadyHandler.class);
@@ -113,11 +124,12 @@ public class RoomExtension extends SFSExtension implements Client {
 		int blindType = this.getParentRoom().getVariable("blind_type").getIntValue();
 		boolean isEmpty = false;
 		RoomVariable emptyVal = this.getParentRoom().getVariable("empty");
-		if(emptyVal != null)
+		if (emptyVal != null)
 			isEmpty = emptyVal.getBoolValue();
 		RoomVariable is_private_table = this.getParentRoom().getVariable("is_private_table");
 		if(is_private_table != null && is_private_table.getBoolValue() == true)
 			isPrivate = true;
+		roomName = this.getGameRoom().getName();
 
 		bigBlind = BigDecimal.valueOf(TEXAS_INFO[blindType].blind);
 		minBuyin = BigDecimal.valueOf(TEXAS_INFO[blindType].minBuyin);
@@ -125,10 +137,9 @@ public class RoomExtension extends SFSExtension implements Client {
 
 		table = new Table(PlayMode.NORMAL_MODE, TABLE_TYPE, tableSize, bigBlind, this);
 
-		if(!isEmpty)
-		{
+		if (!isEmpty) {
 			Random rd = new Random();
-			BigDecimal botBuyin = minBuyin.add(maxBuyin).divide(BigDecimal.valueOf(2));
+			BigDecimal botBuyin = maxBuyin.multiply(BigDecimal.valueOf(3));
 			if(tableSize == 5) {
 				int pos1 = rd.nextInt(2), pos2 = rd.nextInt(2) + 2;
 				table.players[pos1].join(true, true, new BasicBot(0, 25), pos1, "Bot1", "Guest", 9, botBuyin, -1, 0);
@@ -186,12 +197,9 @@ public class RoomExtension extends SFSExtension implements Client {
 			obj.putSFSArray("player_list", playerList);
 
 			return obj;
-		}
-		else if (cmdName.equals("get_user_balance")) {
-			for(Player player : table.players)
-			{
-				if(player.getEmail().compareTo((String)params) == 0)
-				{
+		} else if (cmdName.equals("get_user_balance")) {
+			for (Player player : table.players) {
+				if (player.getEmail().compareTo((String) params) == 0) {
 					return player.getCash().longValue();
 				}
 			}
@@ -242,10 +250,26 @@ public class RoomExtension extends SFSExtension implements Client {
 				}
 			}
 		}
+
+		// for debug by jbj 20180904
+		whereis();
+		////////////////////////////
+
 		updateAll();
 		if (!table.isRunning()) {
 			if (table.playerSize() >= 2)
-				table.run();
+			{
+//				table.run();
+
+				new Thread(new Runnable() {
+				     public void run() {
+						while(true)
+						{
+							table.run();
+						}
+				     }
+				}).start();
+			}
 		}
 	}
 
@@ -255,17 +279,14 @@ public class RoomExtension extends SFSExtension implements Client {
 		for (Player player : table.players) {
 			if (player.playerStatus != PlayerStatus.NONE) {
 				if (player.getEmail().compareTo(email) == 0) {
-					if(player.playerStatus == PlayerStatus.ACTIVE && player.isActive)
-					{
+					if (player.playerStatus == PlayerStatus.ACTIVE && player.isActive) {
 						player.isAddChip = true;
 						player.newChip = chip;
-					}
-					else
-					{
+					} else {
 						player.newChip = chip;
-//						System.out.println("chip: " + player.getCash() + ", newChip: " + chip);
+						// System.out.println("chip: " + player.getCash() + ", newChip: " + chip);
 						sendNewChip(player);
-						if(player.playerStatus == PlayerStatus.SITOUT)
+						if (player.playerStatus == PlayerStatus.SITOUT)
 							sitoutPlayer(player.getEmail(), false);
 						else
 							updatePlayer(player, false, false);
@@ -278,10 +299,11 @@ public class RoomExtension extends SFSExtension implements Client {
 
 	public void sendNewChip(Player player) {
 		long diff = player.newChip - player.getCash().longValue();
-		if(!player.isBot())
+		if (!player.isBot())
 			payPlayerChipcount(player.getEmail(), diff);
 		player.isAddChip = false;
 		player.setCash(BigDecimal.valueOf(player.newChip));
+		player.setAction(Action.ANTE);
 
 		ISFSObject obj = new SFSObject();
 		obj.putInt("pos", player.getPos());
@@ -289,14 +311,14 @@ public class RoomExtension extends SFSExtension implements Client {
 		if (getParentRoom().getUserList().size() > 0)
 			send("texas_addchip", obj, getParentRoom().getUserList());
 	}
-	
+
 	public void sendRebuy(Player player) {
 		if (!player.isBot() && getParentRoom().getUserByName(player.getEmail()) != null)
 			send("texas_rebuy", new SFSObject(), getParentRoom().getUserByName(player.getEmail()));
 	}
-	
+
 	public void setRebuy(String email, boolean isRebuy) {
-		for(Player player: table.players) {
+		for (Player player : table.players) {
 			if (player.playerStatus == PlayerStatus.NONE)
 				continue;
 			if (email.compareTo(player.getEmail()) == 0) {
@@ -323,7 +345,8 @@ public class RoomExtension extends SFSExtension implements Client {
 			return;
 		addPlayerChipcount(email, -buyin);
 
-		table.players[pos].join(false, isAutoRebuy, this, pos, email, name, 0, BigDecimal.valueOf(buyin), giftCategory, giftValue);
+		table.players[pos].join(false, isAutoRebuy, this, pos, email, name, 0, BigDecimal.valueOf(buyin), giftCategory,
+				giftValue);
 
 		updateAll();
 
@@ -333,7 +356,18 @@ public class RoomExtension extends SFSExtension implements Client {
 
 		if (!table.isRunning()) {
 			if (table.playerSize() >= 2)
-				table.run();
+			{
+//				table.run();
+
+				new Thread(new Runnable() {
+				     public void run() {
+						while(true)
+						{
+							table.run();
+						}
+				     }
+				}).start();
+			}
 		}
 	}
 
@@ -353,8 +387,15 @@ public class RoomExtension extends SFSExtension implements Client {
 				}
 
 				// player.playerStatus = PlayerStatus.NONE;
+				
+				// for debug by jbj 20180904
+				whereis();
+				////////////////////////////
 				player.leave();
 				removePlayer(player, status);
+				// for debug by jbj 20180904
+				whereis();
+				////////////////////////////
 			}
 		}
 	}
@@ -389,27 +430,28 @@ public class RoomExtension extends SFSExtension implements Client {
 					}
 				}
 
-				if(isSitOut)
-				{
-//					System.out.println("sitout start");
+				if (isSitOut) {
+					// System.out.println("sitout start");
 					player.playerStatus = PlayerStatus.SITOUT;
 					player.resetHand();
 					player.setAction(Action.SIT_OUT);
-//					System.out.println(player.playerStatus.toString());
-				}
-				else
-				{
+					// System.out.println(player.playerStatus.toString());
+				} else {
 					player.playerStatus = PlayerStatus.ACTIVE;
 					player.resetHand();
 				}
 			}
 		}
+		// for debug by jbj 20180904
+		whereis();
+		////////////////////////////
 		updateAll();
 	}
 
 	public void updateAll() {
 		updateBoard(0, false);
 		updatePlayers(prevShow, false);
+//		setDealer(table.dealer.getPos());
 		showBestCards();
 		if (table.isRunning()) {
 			setBlind();
@@ -478,6 +520,11 @@ public class RoomExtension extends SFSExtension implements Client {
 		dealerPos = dealer.getPos();
 		dealerName = dealer.getName();
 		setDealer(playerToNotify, dealer.getPos(), true);
+	}
+
+	public void dealCards() {
+		if (getParentRoom().getUserList().size() > 0)
+			send("texas_deal_cards", new SFSObject(), getParentRoom().getUserList());
 	}
 
 	public void setDealer(int pos) {
@@ -609,19 +656,18 @@ public class RoomExtension extends SFSExtension implements Client {
 		prevShow = isShow;
 		for (Player player : table.players) {
 			if (player.playerStatus == PlayerStatus.ACTIVE) {
-//				if (!isShow)
-//					updatePlayer(player.publicClone(), false, isDeal);
-//				else if (player.isShow)
-//					updatePlayer(player, false, isDeal);
-//				else
-//					updatePlayer(player.publicClone(), false, isDeal);
-//
-//				if (!player.isBot())
-//					updatePlayer(player, player, false, isDeal);
+				// if (!isShow)
+				// updatePlayer(player.publicClone(), false, isDeal);
+				// else if (player.isShow)
+				// updatePlayer(player, false, isDeal);
+				// else
+				// updatePlayer(player.publicClone(), false, isDeal);
+				//
+				// if (!player.isBot())
+				// updatePlayer(player, player, false, isDeal);
 
 				updatePlayer(player, false, isDeal);
-			}
-			else if (player.playerStatus == PlayerStatus.NEW)
+			} else if (player.playerStatus == PlayerStatus.NEW)
 				updatePlayer(player, true, isDeal);
 			else if (player.playerStatus == PlayerStatus.SITOUT)
 				updatePlayer(player, false, isDeal);
@@ -634,7 +680,7 @@ public class RoomExtension extends SFSExtension implements Client {
 		resObj.putInt("pos", player.getPos());
 		resObj.putUtfString("email", player.getEmail());
 		resObj.putUtfString("name", player.getName());
-		// resObj.putInt("avatar", player.getAvatar());
+		resObj.putInt("avatar", player.getAvatar());
 		resObj.putLong("chip", player.getCash().longValue());
 		resObj.putLong("balance", player.getCash().longValue() + getPlayerChipcount(player.getEmail()));
 		resObj.putInt("raise", player.raise);
@@ -644,7 +690,7 @@ public class RoomExtension extends SFSExtension implements Client {
 		resObj.putBool("sitout", player.playerStatus == PlayerStatus.SITOUT);
 		resObj.putBool("active", player.isActive);
 		resObj.putBool("deal", isDeal);
-//		resObj.putBool("winner", player.isWinner);
+		// resObj.putBool("winner", player.isWinner);
 		resObj.putInt("gift_category", player.giftCategory);
 		resObj.putInt("gift_detail", player.giftDetail);
 		resObj.putBool("show", player.isShow);
@@ -683,7 +729,7 @@ public class RoomExtension extends SFSExtension implements Client {
 		resObj.putInt("pos", player.getPos());
 		resObj.putUtfString("email", player.getEmail());
 		resObj.putUtfString("name", player.getName());
-		// resObj.putInt("avatar", player.getAvatar());
+		 resObj.putInt("avatar", player.getAvatar());
 		resObj.putInt("raise", player.raise);
 		// System.out.println("UPDATE2:" + player.getName() + ":" + player.raise);
 		resObj.putLong("chip", player.getCash().longValue());
@@ -693,7 +739,7 @@ public class RoomExtension extends SFSExtension implements Client {
 		resObj.putBool("sitout", player.playerStatus == PlayerStatus.SITOUT);
 		resObj.putBool("active", player.isActive);
 		resObj.putBool("deal", isDeal);
-//		resObj.putBool("winner", player.isWinner);
+		// resObj.putBool("winner", player.isWinner);
 		resObj.putInt("gift_category", player.giftCategory);
 		resObj.putInt("gift_detail", player.giftDetail);
 		resObj.putBool("show", player.isShow);
@@ -740,12 +786,15 @@ public class RoomExtension extends SFSExtension implements Client {
 			resObj.putInt("value", handValue.getType().getValue());
 			resObj.putUtfString("description", handValue.getDescription());
 			List<Integer> cardArray = new ArrayList<Integer>();
-			if(table.showPlayer.isShow)
-			{
+			List<Integer> wholeArray = new ArrayList<Integer>();
+			if (table.showPlayer.isShow) {
 				for (Card card : cards)
 					cardArray.add(card.hashCode());
+				for (Card card : handValue.wholeCards)
+					wholeArray.add(card.hashCode());
 			}
 			resObj.putIntArray("cards", cardArray);
+			resObj.putIntArray("whole", wholeArray);
 			if (getParentRoom().getUserList().size() > 0)
 				send("texas_showbestcards", resObj, getParentRoom().getUserList());
 			return;
@@ -777,9 +826,8 @@ public class RoomExtension extends SFSExtension implements Client {
 		if (getParentRoom().getUserList().size() > 0)
 			send("texas_hidebestcards", new SFSObject(), getParentRoom().getUserList());
 	}
-	
-	public void showWinnerCards(Player player)
-	{
+
+	public void showWinnerCards(Player player) {
 		Card[] cards = player.getCards();
 		ISFSObject obj = new SFSObject();
 		obj.putInt("pos", player.getPos());
@@ -801,17 +849,57 @@ public class RoomExtension extends SFSExtension implements Client {
 		obj.putInt("card1", cards[0].hashCode());
 		obj.putInt("card2", cards[1].hashCode());
 		obj.putUtfString("hand", handValue.getDescription());
+		if(!player.isBot()) {
+			long total_earning = getPlayerTotalEarning(player.getEmail());
+			int lv = getPlayerLevel(player.getEmail());
+			total_earning += pot;
+			if(total_earning >= Globals.levelPoints[lv])
+			{
+				total_earning = 0;
+				UpdateLevel(player.getEmail(), lv + 1);
+			}
+
+			setPlayerTotalEarning(player.getEmail(), total_earning);
+			obj.putLong("total_earning", total_earning);
+		}
 
 		if (getParentRoom().getUserList().size() > 0)
 			send("texas_pay_winner_chips", obj, getParentRoom().getUserList());
 	}
 	
-	public void hideWinners()
+	public void UpdateLevel(String email, int lv)
 	{
+		IDBManager dbManager = getParentZone().getDBManager();
+		String sql = "UPDATE user"
+				+ " SET level=" + lv
+				+ " WHERE email=\"" + email + "\"";
+		try {
+			dbManager.executeUpdate(sql, new Object[] {});
+		} catch (SQLException e) {
+			trace(ExtensionLogLevel.WARN, "SQL Failed: " + e.toString());
+		}
+		
+		sql = "INSERT INTO news_level(email, level, time)"
+				+ " VALUES(\"" + email + "\""
+				+ "," + lv
+				+ "," + System.currentTimeMillis() + ")";
+		try {
+			dbManager.executeUpdate(sql, new Object[] {});
+		} catch (SQLException e) {
+			trace(ExtensionLogLevel.WARN, "SQL Failed: " + e.toString());
+		}
+		
+		ISFSObject obj = new SFSObject();
+		obj.putInt("level", lv);
+		if(getParentRoom().getUserByName(email) != null)
+			send("update_level", obj, getParentRoom().getUserByName(email));
+	}
+	
+	public void hideWinners() {
 		if (getParentRoom().getUserList().size() > 0)
 			send("texas_hide_winners", new SFSObject(), getParentRoom().getUserList());
 	}
-	
+
 	public void updateHandHistory(String name, long pot, HandValue handValue) {
 
 		sendMessage("", "Dealer", name + " wins " + table.getGameText(pot) + " with " + handValue.toString(), true);
@@ -853,8 +941,8 @@ public class RoomExtension extends SFSExtension implements Client {
 	}
 
 	@Override
-	public Action act(Player playerToNotify, BigDecimal bigBlind, BigDecimal callAmount, BigDecimal minBetAmount, BigDecimal maxBetAmount, List<Card> board,
-			Set<Action> allowedActions) {
+	public Action act(Player playerToNotify, BigDecimal bigBlind, BigDecimal callAmount, BigDecimal minBetAmount,
+			BigDecimal maxBetAmount, List<Card> board, Set<Action> allowedActions) {
 		return getUserInput(playerToNotify, callAmount, minBetAmount, maxBetAmount, allowedActions);
 	}
 
@@ -964,8 +1052,8 @@ public class RoomExtension extends SFSExtension implements Client {
 	 * 
 	 * @return The selected action.
 	 */
-	public Action getUserInput(Player playerToNotify, BigDecimal callAmount, BigDecimal minBetAmount, BigDecimal maxBetAmount, 
-			final Set<Action> allowedActions) {
+	public Action getUserInput(Player playerToNotify, BigDecimal callAmount, BigDecimal minBetAmount,
+			BigDecimal maxBetAmount, final Set<Action> allowedActions) {
 		selectedAction = null;
 
 		if (getParentRoom().getUserByName(playerToNotify.getEmail()) == null)
@@ -1064,9 +1152,8 @@ public class RoomExtension extends SFSExtension implements Client {
 		if (getParentRoom().getUserList().size() > 0)
 			send("texas_gift", params, getParentRoom().getUserList());
 	}
-	
-	public void ShowAnimEmoji(ISFSObject params)
-	{
+
+	public void ShowAnimEmoji(ISFSObject params) {
 		if (getParentRoom().getUserList().size() > 0)
 			send("texas_anim_emoji", params, getParentRoom().getUserList());
 	}
@@ -1184,7 +1271,7 @@ public class RoomExtension extends SFSExtension implements Client {
 		String sql = "SELECT chip FROM user WHERE email=\"" + email + "\"";
 		try {
 			ISFSArray res = dbManager.executeQuery(sql, new Object[] {});
-			if(res.size() > 0)
+			if (res.size() > 0)
 				chipcount = res.getSFSObject(0).getLong("chip");
 		} catch (SQLException e) {
 			trace(ExtensionLogLevel.WARN, "SQL Failed: " + e.toString());
@@ -1257,6 +1344,50 @@ public class RoomExtension extends SFSExtension implements Client {
 		} catch (SQLException e) {
 			trace(ExtensionLogLevel.WARN, "SQL Failed: " + e.toString());
 		}
+	}
+	
+	public void addPlayerTotalEarning(String email, long value) {
+		setPlayerTotalEarning(email, value + getPlayerTotalEarning(email));
+	}
+	
+	public void setPlayerTotalEarning(String email, long value) {
+		IDBManager dbManager = getParentZone().getDBManager();
+		String sql = "UPDATE user SET total_earning=" + value + " WHERE email=\"" + email + "\"";
+		try {
+			dbManager.executeUpdate(sql, new Object[] {});
+		} catch (SQLException e) {
+			trace(ExtensionLogLevel.WARN, "SQL Failed: " + e.toString());
+		}
+	}
+
+	public long getPlayerTotalEarning(String email) {
+		long total_earning = 0;
+		IDBManager dbManager = getParentZone().getDBManager();
+		// System.out.println(email);
+		String sql = "SELECT total_earning FROM user WHERE email=\"" + email + "\"";
+		try {
+			ISFSArray res = dbManager.executeQuery(sql, new Object[] {});
+			if (res.size() > 0)
+				total_earning = res.getSFSObject(0).getLong("total_earning");
+		} catch (SQLException e) {
+			trace(ExtensionLogLevel.WARN, "SQL Failed: " + e.toString());
+		}
+		return total_earning;
+	}
+	
+	public int getPlayerLevel(String email) {
+		int lv = 1;
+		IDBManager dbManager = getParentZone().getDBManager();
+		// System.out.println(email);
+		String sql = "SELECT level FROM user WHERE email=\"" + email + "\"";
+		try {
+			ISFSArray res = dbManager.executeQuery(sql, new Object[] {});
+			if (res.size() > 0)
+				lv = res.getSFSObject(0).getInt("level");
+		} catch (SQLException e) {
+			trace(ExtensionLogLevel.WARN, "SQL Failed: " + e.toString());
+		}
+		return lv;
 	}
 
 }

@@ -12,6 +12,8 @@ import com.smartfoxserver.v2.entities.variables.RoomVariable;
 import com.smartfoxserver.v2.entities.variables.SFSRoomVariable;
 import com.smartfoxserver.v2.exceptions.SFSCreateRoomException;
 import com.smartfoxserver.v2.extensions.BaseClientRequestHandler;
+import com.smartfoxserver.v2.entities.SFSZone;
+import com.smartfoxserver.v2.entities.Room;
 
 public class CreatePrivateRoomHandler extends BaseClientRequestHandler
 {
@@ -23,6 +25,12 @@ public class CreatePrivateRoomHandler extends BaseClientRequestHandler
 		int seat = params.getInt("size");
 		boolean speed = params.getBool("speed");
 		
+		SFSZone zone = (SFSZone) ((ZoneExtension)getParentExtension()).getParentZone();
+		
+		Room room = zone.getRoomByName(tableName);
+		if(room != null && room.isDynamic())
+			getApi().removeRoom(room);
+				
 		CreateRoomSettings settings = new CreateRoomSettings();
 		settings.setGame(true);
 		settings.setName(tableName);
@@ -41,6 +49,7 @@ public class CreatePrivateRoomHandler extends BaseClientRequestHandler
 		rv = new SFSRoomVariable("empty", true);
 		roomVariables.add(rv);		
 		settings.setRoomVariables(roomVariables);
+		settings.setAutoRemoveMode(SFSRoomRemoveMode.NEVER_REMOVE);
 		
 		RoomExtensionSettings extension = new RoomExtensionSettings("Pokerat", "TexasPokerExtension.RoomExtension");
 		settings.setExtension(extension);

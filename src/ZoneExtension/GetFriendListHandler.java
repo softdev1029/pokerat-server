@@ -16,6 +16,11 @@ public class GetFriendListHandler extends BaseClientRequestHandler
 	@Override
 	public void handleClientRequest(User user, ISFSObject params)
 	{
+		// debug by jbj 20180904
+		ZoneExtension zoneExt = (ZoneExtension)getParentExtension();
+		zoneExt.whereis();
+		//////////////////////////
+
 		IDBManager dbManager = getParentExtension().getParentZone().getDBManager();
 		String sql = "SELECT * FROM friend INNER JOIN user ON friend.email=user.email WHERE friend.friend_email=\"" + params.getUtfString("email") + "\"";
 		try {

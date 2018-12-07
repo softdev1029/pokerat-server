@@ -8,6 +8,11 @@ import com.smartfoxserver.v2.extensions.BaseClientRequestHandler;
 public class UpdateGlobalInfoHandler extends BaseClientRequestHandler {
 	@Override
 	public void handleClientRequest(User user, ISFSObject params) {
+		// debug by jbj 20180904
+		ZoneExtension zoneExt = (ZoneExtension)getParentExtension();
+		zoneExt.whereis();
+		//////////////////////////
+
 		int userCount = getParentExtension().getParentZone().getUserCount();
 		
 		ISFSObject obj = new SFSObject();

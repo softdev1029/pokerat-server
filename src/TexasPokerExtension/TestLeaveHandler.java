@@ -6,17 +6,13 @@ import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.exceptions.SFSException;
 import com.smartfoxserver.v2.extensions.BaseServerEventHandler;
 
-public class LeaveHandler extends BaseServerEventHandler
+public class TestLeaveHandler extends BaseServerEventHandler
 {
 	@Override
 	public void handleServerEvent(ISFSEvent event) throws SFSException {
-//		System.out.println("Leave");
-		RoomExtension gameExt = (RoomExtension) getParentExtension();
+		TestExtension gameExt = (TestExtension) getParentExtension();
 		User user = (User) event.getParameter(SFSEventParam.USER);
-		gameExt.leavePlayer(user.getName(), 0);
-		if (gameExt.getParentRoom().getUserList().size() == 0 && gameExt.getParentRoom().isDynamic()) {
-			getApi().removeRoom(gameExt.getParentRoom());
-		}
+		System.out.println(gameExt.getParentRoom().getName() + ": " + user.getName() + " leaved room");
 	}
 }
 

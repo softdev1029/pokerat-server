@@ -57,6 +57,14 @@ public class Table {
 	private boolean delayFlag;
 	private final Object monitor = new Object();
 
+	public String whereis() {
+		StackTraceElement ste = Thread.currentThread().getStackTrace()[2];
+		String where = this.gameExt.roomName + ": " + ste.getClassName() + " " + ste.getMethodName() + " " + ste.getLineNumber() + " ";
+//		System.out.println(where);
+		return where;
+	}
+
+
 	public Table(PlayMode mode, TableType type, int tableSize, BigDecimal bigBlind, RoomExtension _client) {
 		this.playMode = mode;
 		this.tableType = type;
@@ -81,6 +89,11 @@ public class Table {
 
 	public boolean isRunning() {
 		return isRunning;
+	}
+	
+	public boolean isProtable()
+	{
+		return bigBlind.longValue() == 100000000L;
 	}
 
 	public int playerSize() {
@@ -128,24 +141,35 @@ public class Table {
 	}
 
 	public void run() {
+		// for debug by jbj 20180904
+	 	this.whereis();
+		////////////////////////////
 		isRunning = true;
 		dealerPosition = -1;
 		actorPosition = -1;
 		while (true) {
 			for (Player player : players) {
+				// for debug by jbj 20180904
+			 	this.whereis();
+				////////////////////////////
+
 				if (player.playerStatus == PlayerStatus.NONE)
 					continue;
 				if (player.isAddChip) {
 					gameExt.sendNewChip(player);
 				}
-				if (player.getCash().compareTo(bigBlind) < 0) {
-					if(player.isAutoRebuy) {
+				if (player.getCash().longValue() == 0) {
+					if (player.isAutoRebuy) {
 						gameExt.sendNewChip(player);
 					} else {
 						gameExt.sendRebuy(player);
 					}
 				}
 			}
+			
+			// for debug by jbj 20180904
+		 	this.whereis();
+			////////////////////////////
 
 			for (Player player : players) {
 				if (player.playerStatus == PlayerStatus.NEW) {
@@ -157,7 +181,7 @@ public class Table {
 			}
 
 			// gameExt.resetButtons();
-//			gameExt.updatePlayers(false, false);
+			// gameExt.updatePlayers(false, false);
 
 			int noOfActivePlayers = 0;
 			for (Player player : players) {
@@ -179,6 +203,11 @@ public class Table {
 				break;
 			}
 		}
+		
+		
+		// for debug by jbj 20180904
+	 	this.whereis();
+		////////////////////////////
 
 		// Game over.
 		board.clear();
@@ -198,16 +227,30 @@ public class Table {
 	 * Plays a single hand.
 	 */
 	private void playHand() {
+		
+		// for debug by jbj 20180904
+	 	this.whereis();
+		////////////////////////////
+
 		gameExt.sendMessage("", "Dealer", "A new round of the game has begun.", true);
 		resetHand();
+		// for debug by jbj 20180904
+	 	this.whereis();
+		////////////////////////////
 
 		// Small blind.
 		postSmallBlind();
+		// for debug by jbj 20180904
+	 	this.whereis();
+		////////////////////////////
 
 		// Big blind.
 		rotateActor();
 		postBigBlind();
-
+		
+		// for debug by jbj 20180904
+	 	this.whereis();
+		////////////////////////////
 		// Pre-Flop.
 		delayTimer(0.5f);
 		dealHoleCards();
@@ -216,38 +259,56 @@ public class Table {
 		// Flop.
 		if (activePlayerSize() > 1) {
 			bet = BigDecimal.ZERO;
-//			delayTimer(0.5f);
+			// delayTimer(0.5f);
 			minBetDiff = bigBlind;
 			minBet = BigDecimal.ZERO;
 			dealCommunityCards("Flop", 3);
 			doBettingRound(1);
 
+			// for debug by jbj 20180904
+		 	this.whereis();
+			////////////////////////////
+
 			// Turn.
 			if (activePlayerSize() > 1) {
 				bet = BigDecimal.ZERO;
-//				delayTimer(0.5f);
+				// delayTimer(0.5f);
 				dealCommunityCards("Turn", 1);
 				minBetDiff = bigBlind;
 				minBet = BigDecimal.ZERO;
 				doBettingRound(2);
 
+				// for debug by jbj 20180904
+			 	this.whereis();
+				////////////////////////////
 				// River.
 				if (activePlayerSize() > 1) {
 					bet = BigDecimal.ZERO;
-//					delayTimer(0.5f);
+					// delayTimer(0.5f);
 					minBetDiff = bigBlind;
 					minBet = BigDecimal.ZERO;
 					dealCommunityCards("River", 1);
 					doBettingRound(3);
 
+					// for debug by jbj 20180904
+				 	this.whereis();
+					////////////////////////////
 					// Showdown.
 					if (activePlayerSize() > 1) {
 						bet = BigDecimal.ZERO;
+						// for debug by jbj 20180904
+					 	this.whereis();
+						////////////////////////////
 						doShowdown();
 					}
 				}
 			}
 		}
+		
+		// for debug by jbj 20180904
+	 	this.whereis();
+		////////////////////////////
+
 		updatePlayInfo();
 		delayTimer(1);
 	}
@@ -294,7 +355,7 @@ public class Table {
 		deck.shuffle();
 
 		// Determine the first player to act.
-		actorPosition = getNextActivePos(dealerPosition);
+		actorPosition = dealerPosition;
 		actor = players[actorPosition];
 		// actorPosition = dealerPosition;
 		// actor = activePlayers.get(actorPosition);
@@ -387,13 +448,17 @@ public class Table {
 	 * Deals the Hole Cards.
 	 */
 	private void dealHoleCards() {
+		int i = 0;
 		for (Player player : players) {
 			if (player.playerStatus == PlayerStatus.ACTIVE && player.isActive)
 				player.setCards(deck.deal(2));
+			i++;
 		}
 		// for (Player player : activePlayers) {
 		// player.setCards(deck.deal(2));
 		// }
+
+		gameExt.dealCards();
 		notifyPlayersUpdated(false, true);
 		// gameExt.dealCards(0);
 		// delayTimer(1);
@@ -446,7 +511,9 @@ public class Table {
 		raises = 0;
 		for (Player player : players) {
 			if (player.playerStatus == PlayerStatus.ACTIVE && player.isActive)
+			{
 				player.raise = 0;
+			}
 		}
 		gameExt.updateBoard(round, false);
 		gameExt.showBestCards();
@@ -469,7 +536,11 @@ public class Table {
 					BigDecimal maxBetAmount = getMaxBetAmount(actor);
 
 					if (actor.isBot())
-						action = actor.getClient().act(actor, bigBlind, minBet, minBetDiff, maxBetAmount, board, allowedActions);
+						action = actor.getClient().act(actor, bigBlind, minBet, minBetDiff, maxBetAmount, board,
+								allowedActions);
+//					else if(round == 0 && actor.getBet().longValue() == 0
+//							&& actor.getCash().longValue() <= bigBlind.longValue())
+//						action = Action.ALL_IN;
 					else
 						action = actor.getClient().act(actor, bigBlind, callAmount, minBetAmount, maxBetAmount, board,
 								allowedActions);
@@ -552,7 +623,8 @@ public class Table {
 									winner = player;
 							}
 							BigDecimal amount = getTotalPot();
-							BigDecimal realAmount = amount.multiply(new BigDecimal(95)).divide(new BigDecimal(100));
+							int realPercentage = isProtable() ? 95 : 100;
+							BigDecimal realAmount = amount.multiply(new BigDecimal(realPercentage)).divide(new BigDecimal(100));
 							winner.win(realAmount);
 							
 							Hand hand = new Hand(board);
@@ -625,16 +697,17 @@ public class Table {
 			BigDecimal actorBet = actor.getBet();
 			BigDecimal minBetAmount = (minBet.subtract(actor.getBet())).add(minBetDiff);
 			BigDecimal maxBetAmount = getMaxBetAmount(actor);
-			
-//			if(!actor.isBot())
-//				System.out.println(actor.getName() + ": " + minBet.longValue() + "," +  actorBet.longValue() + "," +  minBetAmount.longValue() + "," +  maxBetAmount.longValue());
+
+			// if(!actor.isBot())
+			// System.out.println(actor.getName() + ": " + minBet.longValue() + "," +
+			// actorBet.longValue() + "," + minBetAmount.longValue() + "," +
+			// maxBetAmount.longValue());
 
 			actions.add(Action.FOLD);
 			if (actorBet.compareTo(minBet) < 0) {
 				if (actor.getCash().compareTo(minBet.subtract(actor.getBet())) > 0)
 					actions.add(Action.CALL);
-				else
-				{
+				else {
 					actions.add(Action.ALL_IN);
 					return actions;
 				}
@@ -642,8 +715,7 @@ public class Table {
 				actions.add(Action.CHECK);
 			}
 
-			if(maxBetAmount.compareTo(minBet.subtract(actor.getBet())) != 0)
-			{
+			if (maxBetAmount.compareTo(minBet.subtract(actor.getBet())) != 0) {
 				if (maxBetAmount.compareTo(minBetAmount) > 0)
 					actions.add(Action.RAISE);
 				else
@@ -727,7 +799,7 @@ public class Table {
 			pots.add(pot);
 		}
 	}
-	
+
 	/**
 	 * Performs the showdown.
 	 */
@@ -770,6 +842,8 @@ public class Table {
 			Hand hand = new Hand(board);
 			hand.addCards(playerToShow.getCards());
 			HandValue handValue = new HandValue(hand);
+			
+//			System.out.println(handValue.toString() + ": " + handValue.getValue());
 			boolean doShow = ALWAYS_CALL_SHOWDOWN;
 			if (!doShow) {
 				if (playerToShow.isAllIn()) {
@@ -813,7 +887,8 @@ public class Table {
 				HandValue handValue = new HandValue(hand);
 				player.handValue = handValue.getDescription();
 				player.setAction(null);
-//				player.setAction(new Action(handValue.getDescription(), handValue.getDescription()));
+				// player.setAction(new Action(handValue.getDescription(),
+				// handValue.getDescription()));
 				List<Player> playerList = rankedPlayers.get(handValue);
 				if (playerList == null) {
 					playerList = new ArrayList<>();
@@ -876,17 +951,18 @@ public class Table {
 
 		// Divide winnings.
 		StringBuilder winnerText = new StringBuilder();
-		BigDecimal totalRealPot = totalPot.multiply(new BigDecimal(95)).divide(new BigDecimal(100));
-		
+		int realPercentage = isProtable() ? 95 : 100;
+		BigDecimal totalRealPot = totalPot.multiply(new BigDecimal(realPercentage)).divide(new BigDecimal(100));
+
 		for (Player winner : potDivision.keySet()) {
 			gameExt.showWinnerCards(winner);
 			delayTimer(2);
 		}
-		
+
 		BigDecimal totalWon = BigDecimal.ZERO;
 		for (Player winner : potDivision.keySet()) {
 			BigDecimal potShare = potDivision.get(winner);
-			BigDecimal potRealShare = potShare.multiply(new BigDecimal(95)).divide(new BigDecimal(100));
+			BigDecimal potRealShare = potShare.multiply(new BigDecimal(realPercentage)).divide(new BigDecimal(100));
 			potDivision.put(winner, potRealShare);
 			totalWon = totalWon.add(potRealShare);
 		}
@@ -1029,7 +1105,7 @@ public class Table {
 					}
 				}
 			}
-		}, (int)(_t * 1000));
+		}, (int) (_t * 1000));
 
 		while (delayFlag) {
 			// Wait for the user to select an action.

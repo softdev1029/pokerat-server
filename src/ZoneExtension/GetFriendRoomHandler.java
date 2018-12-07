@@ -15,6 +15,11 @@ public class GetFriendRoomHandler extends BaseClientRequestHandler
 	@Override
 	public void handleClientRequest(User user, ISFSObject params)
 	{
+		// debug by jbj 20180904
+		ZoneExtension zoneExt = (ZoneExtension)getParentExtension();
+		zoneExt.whereis();
+		//////////////////////////
+		
 		ISFSObject response = new SFSObject();
 		List<Room> roomList = getParentExtension().getParentZone().getRoomList();
 		for(Room room : roomList)

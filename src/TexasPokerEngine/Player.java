@@ -3,6 +3,7 @@ package TexasPokerEngine;
 import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Random;
 
 import com.smartfoxserver.v2.db.IDBManager;
 import com.smartfoxserver.v2.extensions.ExtensionLogLevel;
@@ -60,6 +61,10 @@ public class Player implements Comparable<Player> {
 
 	public int giftCategory;
 	public int giftDetail;
+	
+	public long joinTime, duration;
+	
+	private static String[] names = {"Jack", "John", "Mickey", "Tom", "Paul"};
 
 	/**
 	 * Constructor.
@@ -93,6 +98,15 @@ public class Player implements Comparable<Player> {
 		this.giftCategory = giftCate;
 		this.giftDetail = giftVal;
 		isExit = false;
+		
+		if(this.isBot)
+		{
+			Random rd = new Random();
+			this.name = names[rd.nextInt(5)];
+			this.avatar = rd.nextInt(8) + 1;
+			joinTime = System.currentTimeMillis();
+			duration = (rd.nextInt(3) + 2) * 1000 * 60 * 60;
+		}
 
 		resetHand();
 	}
@@ -133,6 +147,15 @@ public class Player implements Comparable<Player> {
 	 * Prepares the player for another hand.
 	 */
 	public void resetHand() {
+		if(isBot)
+		{
+			if(System.currentTimeMillis() > joinTime + duration)
+			{
+				this.join(isBot, isAutoRebuy, client, this.pos, email, name, avatar, cash, giftCategory, giftDetail);
+				return;
+			}
+		}
+		
 		prevCash = cash;
 		winCash = BigDecimal.ZERO;
 		isActive = false;

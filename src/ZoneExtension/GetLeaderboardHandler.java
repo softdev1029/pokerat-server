@@ -18,6 +18,11 @@ public class GetLeaderboardHandler extends BaseClientRequestHandler {
 	@SuppressWarnings("deprecation")
 	@Override
 	public void handleClientRequest(User user, ISFSObject params) {
+		// debug by jbj 20180904
+		ZoneExtension zoneExt = (ZoneExtension)getParentExtension();
+		zoneExt.whereis();
+		//////////////////////////
+		
 		String email = params.getUtfString("email");
 		int type = params.getInt("type");
 

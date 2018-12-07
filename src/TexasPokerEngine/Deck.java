@@ -32,6 +32,17 @@ public class Deck {
                 cards[index++] = new Card(rank, suit);
             }
         }
+//        cards[0] = new Card(Card.JACK, Card.SPADES);
+//        cards[1] = new Card(Card.JACK, Card.HEARTS);
+//        cards[2] = new Card(Card.KING, Card.CLUBS);
+//        cards[3] = new Card(Card.NINE, Card.DIAMONDS);
+//        cards[4] = new Card(Card.QUEEN, Card.HEARTS);
+//        cards[5] = new Card(Card.FIVE, Card.HEARTS);
+//        cards[6] = new Card(Card.FOUR, Card.CLUBS);
+//        cards[7] = new Card(Card.QUEEN, Card.SPADES);
+//        cards[8] = new Card(Card.QUEEN, Card.CLUBS);
+//        cards[9] = new Card(Card.FOUR, Card.HEARTS);
+//        cards[10] = new Card(Card.FOUR, Card.SPADES);
     }
     
     /**

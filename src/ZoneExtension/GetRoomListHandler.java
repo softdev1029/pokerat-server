@@ -16,6 +16,11 @@ public class GetRoomListHandler extends BaseClientRequestHandler
 	@Override
 	public void handleClientRequest(User user, ISFSObject params)
 	{
+		// debug by jbj 20180904
+		ZoneExtension zoneExt = (ZoneExtension)getParentExtension();
+		zoneExt.whereis();
+		//////////////////////////
+		
 		int type = params.getInt("type");
 		long blind = params.getLong("blind");
 

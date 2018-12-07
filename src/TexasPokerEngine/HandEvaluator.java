@@ -180,11 +180,18 @@ public class HandEvaluator {
 	 */
 	private void findDuplicates() {
 		// Find quads, triples and pairs.
+		tripleRank = -1;
 		for (int i = Card.NO_OF_RANKS - 1; i >= 0 ; i--) {
 			if (rankDist[i] == 4) {
 				quadRank = i;
 			} else if (rankDist[i] == 3) {
-				tripleRank = i;
+				if(tripleRank == -1)
+					tripleRank = i;
+				else {
+					if (noOfPairs < MAX_NO_OF_PAIRS) {
+						pairs[noOfPairs++] = i;
+					}
+				}
 			} else if (rankDist[i] == 2) {
 				if (noOfPairs < MAX_NO_OF_PAIRS) {
 					pairs[noOfPairs++] = i;

@@ -21,7 +21,7 @@ public class HandValue implements Comparable<HandValue> {
 	private final int value;
 
 	private List<Card> cards = new ArrayList<>();
-	private List<Card> wholeCards = new ArrayList<>();
+	public List<Card> wholeCards = new ArrayList<>();
 
 	/**
 	 * Constructor.

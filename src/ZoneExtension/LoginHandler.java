@@ -20,13 +20,18 @@ public class LoginHandler extends BaseClientRequestHandler
 	public void handleClientRequest(User user, ISFSObject params)
 	{
 		boolean isFirstLogIn = false;
+		// debug by jbj 20180904
+		ZoneExtension zoneExt = (ZoneExtension)getParentExtension();
+		zoneExt.whereis();
+		//////////////////////////
+		
 		IDBManager dbManager = getParentExtension().getParentZone().getDBManager();
 		String sql = "SELECT * FROM user WHERE email=\"" + params.getUtfString("email") + "\"";
 		try {
 			ISFSArray res = dbManager.executeQuery(sql, new Object[] {});
 			ISFSObject response = new SFSObject();            
 			if(res.size() == 0) {
-				if(params.getBool("facebook"))
+				if(params.getBool("facebook") != null && params.getBool("facebook"))
 				{
 					ISFSObject obj = registerFacebookUser(params);
 					isFirstLogIn = isFirstLogin(obj);
@@ -40,7 +45,7 @@ public class LoginHandler extends BaseClientRequestHandler
 					response.putBool("success", true);
 					response.putSFSObject("info", getUserInfo(params.getUtfString("email")));
 				}
-				else if(params.getBool("guest"))
+				else if(params.getBool("guest") != null && params.getBool("guest"))
 				{
 					ISFSObject obj = registerGuest(params);
 					isFirstLogIn = isFirstLogin(obj);
@@ -64,7 +69,7 @@ public class LoginHandler extends BaseClientRequestHandler
 			else {
 				ISFSObject obj = (ISFSObject)(res.getElementAt(0));
 				String pwd = obj.getUtfString("password");
-				if(params.getBool("facebook"))
+				if(params.getBool("facebook") != null && params.getBool("facebook"))
 				{
 					ISFSObject obj1 = updateFacebookUser(params);
 					isFirstLogIn = isFirstLogin(obj1);
@@ -138,8 +143,8 @@ public class LoginHandler extends BaseClientRequestHandler
 		SimpleDateFormat dateFormatGmt = new SimpleDateFormat("yyyy-MM-dd");
 		dateFormatGmt.setTimeZone(TimeZone.getTimeZone("GMT"));
 
-		System.out.println(dateFormatGmt.format(date1));
-		System.out.println(dateFormatGmt.format(date2));
+//		System.out.println(dateFormatGmt.format(date1));
+//		System.out.println(dateFormatGmt.format(date2));
 
 		if(dateFormatGmt.format(date1).compareTo(dateFormatGmt.format(date2)) != 0)
 			sql = "UPDATE user SET last_login=" + curTime + ", chip=" + (dataObject.getLong("chip") + 100000) + " WHERE email=\"" + dataObject.getUtfString("email") + "\"";
