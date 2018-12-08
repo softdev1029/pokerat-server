@@ -31,13 +31,14 @@ public class RegisterHandler extends BaseClientRequestHandler
 				response.putUtfString("reason", "email");
 			}
 			else {
-				sql = "INSERT INTO user(email, password, name, chip, coin, user_id, started_playing, description, location)"
+				sql = "INSERT INTO user(email, password, name, chip, coin, level, user_id, started_playing, description, location)"
 						+ " VALUES (\""
 						+ params.getUtfString("email") + "\",\""
 						+ params.getUtfString("password") + "\",\""
 						+ params.getUtfString("name") + "\","
 						+ 10000 + ","
-						+ 10 + ",\""
+						+ 10 + ","
+						+ 1 + ",\""
 						+ "\","
 						+ System.currentTimeMillis() + ",\""
 						+ "\",\""

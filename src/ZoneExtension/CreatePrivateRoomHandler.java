@@ -14,6 +14,7 @@ import com.smartfoxserver.v2.exceptions.SFSCreateRoomException;
 import com.smartfoxserver.v2.extensions.BaseClientRequestHandler;
 import com.smartfoxserver.v2.entities.SFSZone;
 import com.smartfoxserver.v2.entities.Room;
+import com.smartfoxserver.v2.entities.SFSRoomRemoveMode;
 
 public class CreatePrivateRoomHandler extends BaseClientRequestHandler
 {
