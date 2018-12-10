@@ -821,7 +821,15 @@ public class RoomExtension extends SFSExtension implements Client {
 				send("texas_showbestcards", resObj, getParentRoom().getUserByName(player.getEmail()));
 		}
 	}
-
+	
+	public void dealerShareToDealer(long dealerShare)
+	{
+		ISFSObject resObj = new SFSObject();
+		resObj.putLong("value", dealerShare);
+		send("texas_dealerShareToDealer", resObj, getParentRoom().getUserList());
+		
+	}
+	
 	public void hideBestCards() {
 		if (getParentRoom().getUserList().size() > 0)
 			send("texas_hidebestcards", new SFSObject(), getParentRoom().getUserList());

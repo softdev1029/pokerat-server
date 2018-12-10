@@ -93,7 +93,7 @@ public class Table {
 	
 	public boolean isProtable()
 	{
-		return bigBlind.longValue() == 100000000L;
+		return bigBlind.longValue() == 10000000L;
 	}
 
 	public int playerSize() {
@@ -645,6 +645,11 @@ public class Table {
 							showPlayer = null;
 
 							delayTimer(4);
+							if(isProtable())
+							{
+								gameExt.dealerShareToDealer(dealerShareValue);
+								delayTimer(4);
+							}
 
 							playersToAct = 0;
 
@@ -1011,7 +1016,13 @@ public class Table {
 
 		BigDecimal dealerShare = totalPot.subtract(totalWon);
 		long dealerShareValue = dealerShare.longValue();
-		
+
+		if(isProtable())
+		{
+			gameExt.dealerShareToDealer(dealerShareValue);
+			delayTimer(4);
+		}
+
 		gameExt.hideWinners();
 		delayTimer(0.5f);
 
