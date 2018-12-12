@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+import ZoneExtension.LogOutput;
+
 public class Deck {
     
     /** The number of cards in a deck. */
@@ -49,6 +51,8 @@ public class Deck {
      * Shuffles the deck.
      */
     public void shuffle() {
+    	//for log trace
+	 	LogOutput.instance().trace("[shuffle] begins");
         for (int oldIndex = 0; oldIndex < NO_OF_CARDS; oldIndex++) {
             int newIndex = random.nextInt(NO_OF_CARDS);
             Card tempCard = cards[oldIndex];
@@ -56,6 +60,8 @@ public class Deck {
             cards[newIndex] = tempCard;
         }
         nextCardIndex = 0;
+      //for log trace
+	 	LogOutput.instance().trace("[shuffle] ends");
     }
     
     /**

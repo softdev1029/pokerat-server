@@ -18,6 +18,8 @@ import java.util.TimerTask;
 import java.util.Timer;
 import java.util.TreeMap;
 
+import ZoneExtension.LogOutput;
+
 public class Table {
 
 	private static final int MAX_RAISES = 3;
@@ -143,6 +145,8 @@ public class Table {
 	public void run() {
 		// for debug by jbj 20180904
 	 	this.whereis();
+	 	//for log trace
+	 	LogOutput.instance().trace("[run] begins");
 		////////////////////////////
 		isRunning = true;
 		dealerPosition = -1;
@@ -156,12 +160,20 @@ public class Table {
 				if (player.playerStatus == PlayerStatus.NONE)
 					continue;
 				if (player.isAddChip) {
+					//for log trace
+				 	LogOutput.instance().trace("case : player.isAddChip is true");
 					gameExt.sendNewChip(player);
 				}
 				if (player.getCash().longValue() == 0) {
+					//for log trace
+				 	LogOutput.instance().trace("case : player.getCash().longValue() is 0");
 					if (player.isAutoRebuy) {
+						//for log trace
+					 	LogOutput.instance().trace("case : player.isAutoRebuy is true");
 						gameExt.sendNewChip(player);
 					} else {
+						//for log trace
+					 	LogOutput.instance().trace("case : player.isAutoRebuy is false");
 						gameExt.sendRebuy(player);
 					}
 				}
@@ -173,7 +185,12 @@ public class Table {
 
 			for (Player player : players) {
 				if (player.playerStatus == PlayerStatus.NEW) {
+					//for log trace
+				 	LogOutput.instance().trace("case : player.playerStatus is PlayerStatus.NEW");
+
 					if (player.getCash().longValue() > 0) {
+						//for log trace
+					 	LogOutput.instance().trace("case : player.getCash().longValue() > 0");
 						player.setAction(Action.ANTE);
 						player.playerStatus = PlayerStatus.ACTIVE;
 					}
@@ -188,16 +205,27 @@ public class Table {
 				if (player.playerStatus != PlayerStatus.ACTIVE)
 					continue;
 				if (player.getCash().compareTo(BigDecimal.ZERO) > 0) {
+					//for log trace
+				 	LogOutput.instance().trace("case : player.getCash().compareTo(BigDecimal.ZERO) > 0");
 					noOfActivePlayers++;
 					if (player.getAction() != Action.ANTE)
+					{
+						//for log trace
+					 	LogOutput.instance().trace("case : player.getAction() is not Action.ANTE");
 						player.setAction(null);
+						
+					}
 				} else {
+					//for log trace
+				 	LogOutput.instance().trace("case : player.getCash().compareTo(BigDecimal.ZERO) < 0");
 					player.playerStatus = PlayerStatus.NEW;
 					player.resetHand();
 					// player.setAction(Action.BUSTED);
 				}
 			}
 			if (noOfActivePlayers > 1) {
+				//for log trace
+			 	LogOutput.instance().trace("case : noOfActivePlayers > 1");
 				playHand();
 			} else {
 				break;
@@ -221,20 +249,24 @@ public class Table {
 			player.resetHand();
 		}
 		notifyPlayersUpdated(false, false);
+	 	//for log trace
+	 	LogOutput.instance().trace("[run] ends");
 	}
 
 	/**
 	 * Plays a single hand.
 	 */
 	private void playHand() {
-		
+		//for log trace
+	 	LogOutput.instance().trace("[playHand] begins");
 		// for debug by jbj 20180904
 	 	this.whereis();
 		////////////////////////////
 
 		gameExt.sendMessage("", "Dealer", "A new round of the game has begun.", true);
-		resetHand();
 		// for debug by jbj 20180904
+		resetHand();
+		rotateActor();
 	 	this.whereis();
 		////////////////////////////
 
@@ -311,6 +343,8 @@ public class Table {
 
 		updatePlayInfo();
 		delayTimer(1);
+		//for log trace
+	 	LogOutput.instance().trace("[playHand] ends");
 	}
 
 	public int getNextActivePos(int pos) {
@@ -326,6 +360,8 @@ public class Table {
 	 * Resets the game for a new hand.
 	 */
 	private void resetHand() {
+		//for log trace
+	 	LogOutput.instance().trace("[table->resetHand] begins");
 		// Clear the board.
 		board.clear();
 		pots.clear();
@@ -372,27 +408,40 @@ public class Table {
 		// dealer.setAction(Action.ANTE);
 		dealerPos = dealer.getPos();
 		// notifyPlayersUpdated(false);
+		//for log trace
+	 	LogOutput.instance().trace("[table->resetHand] ends");
 	}
 
 	/**
 	 * Rotates the position of the player in turn (the actor).
 	 */
 	private void rotateActor() {
+		//for log trace
+	 	LogOutput.instance().trace("[rotateActor] begins");
 		actorPosition = getNextActivePos(actorPosition);
 		actor = players[actorPosition];
 		// actorPosition = dealerPosition;
 		// actor = activePlayers.get(actorPosition);
+		//for log trace
+	 	LogOutput.instance().trace("[rotateActor] ends");
 	}
 
 	private void selectActor(boolean show) {
+		//for log trace
+	 	LogOutput.instance().trace("[selectActor] begins");
 		isSelect = show;
 		gameExt.selectActor(actor, show);
+		//for log trace
+	 	LogOutput.instance().trace("[selectActor] ends");
 	}
 
 	/**
 	 * Posts the small blind.
 	 */
 	private void postSmallBlind() {
+		//for log trace
+	 	LogOutput.instance().trace("[postSmallBlind] begins");
+	 	
 		final BigDecimal smallBlind = bigBlind.divide(BigDecimal.valueOf(2)); // TODO
 		if (actor.getAction() == Action.ANTE) {
 			actor.postBigBlind(bigBlind);
@@ -411,12 +460,17 @@ public class Table {
 		// actor.setBlind(1);
 		// gameExt.setBlind(actor, "(SB)");
 		// gameExt.setBlind(actor, 1);
+		
+		//for log trace
+	 	LogOutput.instance().trace("[postSmallBlind] ends");
 	}
 
 	/**
 	 * Posts the big blind.
 	 */
 	private void postBigBlind() {
+		//for log trace
+	 	LogOutput.instance().trace("[table->postBigBlind] begins");
 		if (actor.getCash().compareTo(bigBlind) >= 0) {
 			actor.postBigBlind(bigBlind);
 			contributePot(bigBlind);
@@ -442,12 +496,16 @@ public class Table {
 		// gameExt.setBlind(actor, "(BB)");
 		// gameExt.setBlind(actor, 2);
 		gameExt.setBlind();
+		//for log trace
+	 	LogOutput.instance().trace("[table->postBigBlind] ends");
 	}
 
 	/**
 	 * Deals the Hole Cards.
 	 */
 	private void dealHoleCards() {
+		//for log trace
+	 	LogOutput.instance().trace("[dealHoleCards] begins");
 		int i = 0;
 		for (Player player : players) {
 			if (player.playerStatus == PlayerStatus.ACTIVE && player.isActive)
@@ -462,6 +520,8 @@ public class Table {
 		notifyPlayersUpdated(false, true);
 		// gameExt.dealCards(0);
 		// delayTimer(1);
+		//for log trace
+	 	LogOutput.instance().trace("[dealHoleCards] ends");
 	}
 
 	/**
@@ -473,17 +533,23 @@ public class Table {
 	 *            The number of cards to deal.
 	 */
 	private void dealCommunityCards(String phaseName, int noOfCards) {
+		//for log trace
+	 	LogOutput.instance().trace("[dealCommunityCards] begins");
 		for (int i = 0; i < noOfCards; i++) {
 			board.add(deck.deal());
 		}
 		notifyPlayersUpdated(false, false);
 		// delayTimer(1);
+		//for log trace
+	 	LogOutput.instance().trace("[dealCommunityCards] ends");
 	}
 
 	/**
 	 * Performs a betting round.
 	 */
 	private void doBettingRound(int round) {
+		//for log trace
+	 	LogOutput.instance().trace("[doBettingRound] begins");
 		// Determine the number of active players.
 		playersToAct = 0;
 		for (Player player : players) {
@@ -684,6 +750,8 @@ public class Table {
 		}
 		notifyBoardUpdated();
 		notifyPlayersUpdated(false, false);
+		//for log trace
+	 	LogOutput.instance().trace("[doBettingRound] ends");
 	}
 
 	/**
@@ -756,6 +824,8 @@ public class Table {
 	 *            The amount to contribute.
 	 */
 	private void contributePot(BigDecimal amount) {
+		//for log trace
+	 	LogOutput.instance().trace("[contributePot] begins");
 		for (Pot pot : pots) {
 			if (!pot.hasContributer(actor)) {
 				BigDecimal potBet = pot.getBet();
@@ -778,6 +848,8 @@ public class Table {
 			pot.addContributer(actor);
 			pots.add(pot);
 		}
+		//for log trace
+	 	LogOutput.instance().trace("[contributePot] ends");
 	}
 
 	private void contributePot(Player player, BigDecimal amount) {
@@ -809,6 +881,8 @@ public class Table {
 	 * Performs the showdown.
 	 */
 	private void doShowdown() {
+		//for log trace
+	 	LogOutput.instance().trace("[doShowdown] begins");
 		// board update due to update real pot and dealer pot
 		gameExt.updateBoard(3, true);
 		delayTimer(1.5f);
@@ -1027,9 +1101,13 @@ public class Table {
 		delayTimer(0.5f);
 
 		winnerText.append('.');
+		//for log trace
+	 	LogOutput.instance().trace("[doShowdown] ends");
 	}
 
 	private void updatePlayInfo() {
+		//for log trace
+	 	LogOutput.instance().trace("[updatePlayInfo] begins");
 		for (Player player : players) {
 			if (player.isBot())
 				continue;
@@ -1037,6 +1115,8 @@ public class Table {
 				gameExt.addPlayInfo(player.getEmail(), player.winCash.longValue());
 			}
 		}
+		//for log trace
+	 	LogOutput.instance().trace("[updatePlayInfo] ends");
 	}
 
 	/**
@@ -1056,8 +1136,12 @@ public class Table {
 	 * Notifies clients that the board has been updated.
 	 */
 	private void notifyBoardUpdated() {
+		//for log trace
+	 	LogOutput.instance().trace("[notifyBoardUpdated] begins");
 		gameExt.updateBoard(0, false);
 		gameExt.showBestCards();
+		//for log trace
+	 	LogOutput.instance().trace("[notifyBoardUpdated] ends");
 	}
 
 	/**
@@ -1084,6 +1168,8 @@ public class Table {
 	 *            Whether we are at the showdown phase.
 	 */
 	private void notifyPlayersUpdated(boolean showdown, boolean isDeal) {
+		//for log trace
+	 	LogOutput.instance().trace("[notifyPlayersUpdated] begins");
 		for (Player playerToNotify : players) {
 			for (Player player : players) {
 				if (player.playerStatus == PlayerStatus.NONE)
@@ -1099,9 +1185,13 @@ public class Table {
 		}
 		gameExt.updatePlayers(showdown, isDeal);
 		gameExt.showBestCards();
+		//for log trace
+	 	LogOutput.instance().trace("[notifyPlayersUpdated] ends");
 	}
 
 	private void delayTimer(float _t) {
+		//for log trace
+	 	LogOutput.instance().trace("[table->delayTimer] begins");
 		delayFlag = true;
 		// SetTimer
 		timer = new Timer();
@@ -1129,6 +1219,8 @@ public class Table {
 			}
 		}
 		timer.cancel();
+		//for log trace
+	 	LogOutput.instance().trace("[table->delayTimer] ends");
 	}
 
 }

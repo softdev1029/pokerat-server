@@ -26,6 +26,7 @@ import TexasPokerAction.BetAction;
 import TexasPokerAction.RaiseAction;
 import TexasPokerBot.BasicBot;
 import ZoneExtension.ZoneExtension;
+import ZoneExtension.LogOutput;
 
 import com.smartfoxserver.v2.core.SFSEventType;
 import com.smartfoxserver.v2.db.IDBManager;
@@ -298,6 +299,9 @@ public class RoomExtension extends SFSExtension implements Client {
 	}
 
 	public void sendNewChip(Player player) {
+	 	//for log trace
+	 	LogOutput.instance().trace("[sendNewChip] begins");
+	 	
 		long diff = player.newChip - player.getCash().longValue();
 		if (!player.isBot())
 			payPlayerChipcount(player.getEmail(), diff);
@@ -310,11 +314,19 @@ public class RoomExtension extends SFSExtension implements Client {
 		obj.putLong("diff", diff);
 		if (getParentRoom().getUserList().size() > 0)
 			send("texas_addchip", obj, getParentRoom().getUserList());
+		
+		//for log trace
+	 	LogOutput.instance().trace("[sendNewChip] ends");
 	}
 
 	public void sendRebuy(Player player) {
+		//for log trace
+	 	LogOutput.instance().trace("[sendRebuy] begins");
 		if (!player.isBot() && getParentRoom().getUserByName(player.getEmail()) != null)
 			send("texas_rebuy", new SFSObject(), getParentRoom().getUserByName(player.getEmail()));
+		//for log trace
+	 	LogOutput.instance().trace("[sendRebuy] ends");
+
 	}
 
 	public void setRebuy(String email, boolean isRebuy) {
@@ -523,8 +535,12 @@ public class RoomExtension extends SFSExtension implements Client {
 	}
 
 	public void dealCards() {
+		//for log trace
+	 	LogOutput.instance().trace("[dealCards] begins");
 		if (getParentRoom().getUserList().size() > 0)
 			send("texas_deal_cards", new SFSObject(), getParentRoom().getUserList());
+		//for log trace
+	 	LogOutput.instance().trace("[dealCards] ends");
 	}
 
 	public void setDealer(int pos) {
@@ -563,6 +579,8 @@ public class RoomExtension extends SFSExtension implements Client {
 	}
 
 	public void setBlind() {
+		//for log trace
+	 	LogOutput.instance().trace("[setBlind] begins");
 		ISFSObject resObj = new SFSObject();
 		resObj.putInt("pos0", table.dealerPos);
 		resObj.putInt("pos1", table.smallBlindPos);
@@ -570,7 +588,9 @@ public class RoomExtension extends SFSExtension implements Client {
 		// System.out.println("Blind:" + table.dealerPos + "," + table.smallBlindPos +
 		// "," + table.bigBlindPos);
 		if (getParentRoom().getUserList().size() > 0)
-			send("texas_setblind", resObj, getParentRoom().getUserList());
+			send("texas_setblind", resObj, getParentRoom().getUserList());	
+		//for log trace
+	 	LogOutput.instance().trace("[setBlind] ends");
 	}
 
 	@Override
@@ -604,6 +624,8 @@ public class RoomExtension extends SFSExtension implements Client {
 	}
 
 	public void updateBoard(int dealRound, boolean isLast) {
+		//for log trace
+	 	LogOutput.instance().trace("[updateBoard] begins");
 		ISFSObject resObj = new SFSObject();
 		List<Integer> cardArray = new ArrayList<Integer>();
 		for (Card card : table.board) {
@@ -622,7 +644,8 @@ public class RoomExtension extends SFSExtension implements Client {
 
 		if (getParentRoom().getUserList().size() > 0)
 			send("texas_updateboard", resObj, getParentRoom().getUserList());
-		
+		//for log trace
+	 	LogOutput.instance().trace("[updateBoard] ends");
 	}
 
 	@Override
@@ -653,6 +676,8 @@ public class RoomExtension extends SFSExtension implements Client {
 	}
 
 	public void updatePlayers(boolean isShow, boolean isDeal) {
+		//for log trace
+	 	LogOutput.instance().trace("[updatePlayers] begins");
 		prevShow = isShow;
 		for (Player player : table.players) {
 			if (player.playerStatus == PlayerStatus.ACTIVE) {
@@ -673,9 +698,13 @@ public class RoomExtension extends SFSExtension implements Client {
 				updatePlayer(player, false, isDeal);
 		}
 		showBestCards();
+		//for log trace
+	 	LogOutput.instance().trace("[updatePlayers] ends");
 	}
 
 	void updatePlayer(Player player, boolean isNew, boolean isDeal) {
+		//for log trace
+	 	LogOutput.instance().trace("[updatePlayer] begins");
 		ISFSObject resObj = new SFSObject();
 		resObj.putInt("pos", player.getPos());
 		resObj.putUtfString("email", player.getEmail());
@@ -722,6 +751,8 @@ public class RoomExtension extends SFSExtension implements Client {
 
 		if (getParentRoom().getUserList().size() > 0)
 			send("texas_updateplayer", resObj, getParentRoom().getUserList());
+		//for log trace
+	 	LogOutput.instance().trace("[updatePlayer] ends");
 	}
 
 	void updatePlayer(Player playerToNotify, Player player, boolean isNew, boolean isDeal) {
@@ -774,6 +805,8 @@ public class RoomExtension extends SFSExtension implements Client {
 	}
 
 	public void showBestCards() {
+		//for log trace
+	 	LogOutput.instance().trace("[showBestCards] begins");
 		if (table.showPlayer != null) {
 			Hand hand = new Hand(table.board);
 			hand.addCards(table.showPlayer.getCards());
@@ -820,22 +853,33 @@ public class RoomExtension extends SFSExtension implements Client {
 			if (getParentRoom().getUserByName(player.getEmail()) != null)
 				send("texas_showbestcards", resObj, getParentRoom().getUserByName(player.getEmail()));
 		}
+		//for log trace
+	 	LogOutput.instance().trace("[showBestCards] ends");
 	}
 	
 	public void dealerShareToDealer(long dealerShare)
 	{
+		//for log trace
+	 	LogOutput.instance().trace("[dealerShareToDealer] begins");
 		ISFSObject resObj = new SFSObject();
 		resObj.putLong("value", dealerShare);
 		send("texas_dealerShareToDealer", resObj, getParentRoom().getUserList());
-		
+		//for log trace
+	 	LogOutput.instance().trace("[dealerShareToDealer] ends");
 	}
 	
 	public void hideBestCards() {
+		//for log trace
+	 	LogOutput.instance().trace("[hideBestCards] begins");
 		if (getParentRoom().getUserList().size() > 0)
 			send("texas_hidebestcards", new SFSObject(), getParentRoom().getUserList());
+		//for log trace
+	 	LogOutput.instance().trace("[hideBestCards] ends");
 	}
 
 	public void showWinnerCards(Player player) {
+		//for log trace
+	 	LogOutput.instance().trace("[showWinnerCards] begins");
 		Card[] cards = player.getCards();
 		ISFSObject obj = new SFSObject();
 		obj.putInt("pos", player.getPos());
@@ -844,10 +888,14 @@ public class RoomExtension extends SFSExtension implements Client {
 
 		if (getParentRoom().getUserList().size() > 0)
 			send("texas_show_winner_cards", obj, getParentRoom().getUserList());
+		//for log trace
+	 	LogOutput.instance().trace("[showWinnerCards] ends");
 	}
 	
 	public void payWinnerChips(Player player, Long pot, HandValue handValue, Long remainPot)
 	{
+		//for log trace
+	 	LogOutput.instance().trace("[payWinnerChips] begins");
 		Card[] cards = player.getCards();
 		ISFSObject obj = new SFSObject();
 		obj.putInt("pos", player.getPos());
@@ -873,10 +921,14 @@ public class RoomExtension extends SFSExtension implements Client {
 
 		if (getParentRoom().getUserList().size() > 0)
 			send("texas_pay_winner_chips", obj, getParentRoom().getUserList());
+		//for log trace
+	 	LogOutput.instance().trace("[payWinnerChips] ends");
 	}
 	
 	public void UpdateLevel(String email, int lv)
 	{
+		//for log trace
+	 	LogOutput.instance().trace("[UpdateLevel] begins");
 		IDBManager dbManager = getParentZone().getDBManager();
 		String sql = "UPDATE user"
 				+ " SET level=" + lv
@@ -901,14 +953,22 @@ public class RoomExtension extends SFSExtension implements Client {
 		obj.putInt("level", lv);
 		if(getParentRoom().getUserByName(email) != null)
 			send("update_level", obj, getParentRoom().getUserByName(email));
+		//for log trace
+	 	LogOutput.instance().trace("[UpdateLevel] ends");
 	}
 	
 	public void hideWinners() {
+		//for log trace
+	 	LogOutput.instance().trace("[hideWinners] begins");
 		if (getParentRoom().getUserList().size() > 0)
 			send("texas_hide_winners", new SFSObject(), getParentRoom().getUserList());
+		//for log trace
+	 	LogOutput.instance().trace("[hideWinners] ends");
 	}
 
 	public void updateHandHistory(String name, long pot, HandValue handValue) {
+		//for log trace
+	 	LogOutput.instance().trace("[updateHandHistory] begins");
 
 		sendMessage("", "Dealer", name + " wins " + table.getGameText(pot) + " with " + handValue.toString(), true);
 
@@ -918,6 +978,8 @@ public class RoomExtension extends SFSExtension implements Client {
 		obj.putUtfString("hand", handValue.getWholeCardString());
 		if (getParentRoom().getUserList().size() > 0)
 			send("texas_update_hand_history", obj, getParentRoom().getUserList());
+		//for log trace
+	 	LogOutput.instance().trace("[updateHandHistory] ends");
 	}
 
 	@Override
@@ -1115,11 +1177,15 @@ public class RoomExtension extends SFSExtension implements Client {
 	}
 
 	public void potAnim(int pos) {
+		//for log trace
+	 	LogOutput.instance().trace("[potAnim] begins");
 		if (getParentRoom().getUserList().size() > 0) {
 			ISFSObject obj = new SFSObject();
 			obj.putInt("pos", pos);
 			send("texas_potanim", obj, getParentRoom().getUserList());
 		}
+		//for log trace
+	 	LogOutput.instance().trace("[potAnim] ends");
 	}
 
 	public void kickPlayers() {
@@ -1173,6 +1239,9 @@ public class RoomExtension extends SFSExtension implements Client {
 	}
 
 	public void payPlayerChipcount(String email, long value) {
+		//for log trace
+	 	LogOutput.instance().trace("[payPlayerChipcount] begins");
+	 	
 		long chip = getPlayerChipcount(email);
 		if(chip >= value)
 			update_daily_hand(email, -value);
@@ -1182,6 +1251,9 @@ public class RoomExtension extends SFSExtension implements Client {
 		if (chip < 0)
 			chip = 0;
 		setPlayerChipcount(email, chip);
+		
+		//for log trace
+	 	LogOutput.instance().trace("[payPlayerChipcount] ends");
 	}
 
 	public void update_daily_hand(String email, long value) {		
@@ -1359,6 +1431,8 @@ public class RoomExtension extends SFSExtension implements Client {
 	}
 	
 	public void setPlayerTotalEarning(String email, long value) {
+		//for log trace
+	 	LogOutput.instance().trace("[setPlayerTotalEarning] begins");
 		IDBManager dbManager = getParentZone().getDBManager();
 		String sql = "UPDATE user SET total_earning=" + value + " WHERE email=\"" + email + "\"";
 		try {
@@ -1366,6 +1440,8 @@ public class RoomExtension extends SFSExtension implements Client {
 		} catch (SQLException e) {
 			trace(ExtensionLogLevel.WARN, "SQL Failed: " + e.toString());
 		}
+		//for log trace
+	 	LogOutput.instance().trace("[setPlayerTotalEarning] ends");
 	}
 
 	public long getPlayerTotalEarning(String email) {

@@ -3,6 +3,8 @@ package TexasPokerEngine;
 import java.util.ArrayList;
 import java.util.List;
 
+import ZoneExtension.LogOutput;
+
 public class HandValue implements Comparable<HandValue> {
 
 	/**
@@ -29,12 +31,16 @@ public class HandValue implements Comparable<HandValue> {
 	 * @param hand The hand.
 	 */
 	public HandValue(Hand hand) {
+		//for log trace
+	 	LogOutput.instance().trace("[HandValue] begins");
 		this.hand = hand;
 		HandEvaluator evaluator = new HandEvaluator(hand);
 		type = evaluator.getType();
 		value = evaluator.getValue();
 		cards = evaluator.getBestCards();
 		wholeCards = evaluator.getBestWholeCards();
+		//for log trace
+	 	LogOutput.instance().trace("[HandValue] ends");
 	}
 
 	/**

@@ -1,6 +1,7 @@
 package TexasPokerEngine;
 
 import java.util.Collection;
+import ZoneExtension.LogOutput;
 
 public class Hand {
 
@@ -40,12 +41,16 @@ public class Hand {
 	 *            The initial cards.
 	 */
 	public Hand(Collection<Card> cards) {
+		//for log trace
+	 	LogOutput.instance().trace("[Hand] begins");
 		if (cards == null) {
 			throw new IllegalArgumentException("Null array");
 		}
 		for (Card card : cards) {
 			addCard(card);
 		}
+		//for log trace
+	 	LogOutput.instance().trace("[Hand] ends");
 	}
 
 	/**
@@ -99,6 +104,8 @@ public class Hand {
 	 *             If the card is null.
 	 */
 	public void addCard(Card card) {
+		//for log trace
+	 	LogOutput.instance().trace("[addCard] begins");
 		if (card == null) {
 			throw new IllegalArgumentException("Null card");
 		}
@@ -118,6 +125,8 @@ public class Hand {
 			cards[insertIndex] = card;
 			noOfCards++;
 		}
+		//for log trace
+	 	LogOutput.instance().trace("[addCard] ends");
 	}
 
 	/**
@@ -130,6 +139,8 @@ public class Hand {
 	 *            The cards to add.
 	 */
 	public void addCards(Card[] cards) {
+		//for log trace
+	 	LogOutput.instance().trace("[addCards] begins");
 		if (cards == null) {
 			throw new IllegalArgumentException("Null array");
 		}
@@ -139,6 +150,8 @@ public class Hand {
 		for (Card card : cards) {
 			addCard(card);
 		}
+		//for log trace
+	 	LogOutput.instance().trace("[addCards] ends");
 	}
 
 	/**
@@ -151,6 +164,8 @@ public class Hand {
 	 *            The cards to add.
 	 */
 	public void addCards(Collection<Card> cards) {
+		//for log trace
+	 	LogOutput.instance().trace("[addCards] begins");
 		if (cards == null) {
 			throw new IllegalArgumentException("Null collection");
 		}
@@ -160,6 +175,8 @@ public class Hand {
 		for (Card card : cards) {
 			addCard(card);
 		}
+		//for log trace
+	 	LogOutput.instance().trace("[addCards] ends");
 	}
 
 	/**
@@ -177,7 +194,11 @@ public class Hand {
 	 * Removes all cards.
 	 */
 	public void removeAllCards() {
+		//for log trace
+	 	LogOutput.instance().trace("[removeAllCards] begins");
 		noOfCards = 0;
+		//for log trace
+	 	LogOutput.instance().trace("[removeAllCards] ends");
 	}
 
 	/** {@inheritDoc} */

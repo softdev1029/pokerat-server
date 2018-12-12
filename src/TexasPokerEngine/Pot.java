@@ -5,6 +5,8 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+import ZoneExtension.LogOutput;
+
 public class Pot {
 
     /** Bet for this pot. */
@@ -49,7 +51,11 @@ public class Pot {
      *            The player.
      */
     public void addContributer(Player player) {
+    	//for log trace
+	 	LogOutput.instance().trace("[addContributer] begins");
         contributors.add(player);
+      //for log trace
+	 	LogOutput.instance().trace("[addContributer] ends");
     }
 
     /**
