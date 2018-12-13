@@ -52,10 +52,10 @@ public class Pot {
      */
     public void addContributer(Player player) {
     	//for log trace
-	 	LogOutput.instance().trace("[addContributer] begins");
+	 	LogOutput.traceLog("[addContributer] begins");
         contributors.add(player);
       //for log trace
-	 	LogOutput.instance().trace("[addContributer] ends");
+	 	LogOutput.traceLog("[addContributer] ends");
     }
 
     /**

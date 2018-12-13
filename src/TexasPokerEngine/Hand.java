@@ -42,7 +42,7 @@ public class Hand {
 	 */
 	public Hand(Collection<Card> cards) {
 		//for log trace
-	 	LogOutput.instance().trace("[Hand] begins");
+	 	LogOutput.traceLog("[Hand] begins");
 		if (cards == null) {
 			throw new IllegalArgumentException("Null array");
 		}
@@ -50,7 +50,7 @@ public class Hand {
 			addCard(card);
 		}
 		//for log trace
-	 	LogOutput.instance().trace("[Hand] ends");
+	 	LogOutput.traceLog("[Hand] ends");
 	}
 
 	/**
@@ -105,7 +105,7 @@ public class Hand {
 	 */
 	public void addCard(Card card) {
 		//for log trace
-	 	LogOutput.instance().trace("[addCard] begins");
+	 	LogOutput.traceLog("[addCard] begins");
 		if (card == null) {
 			throw new IllegalArgumentException("Null card");
 		}
@@ -126,7 +126,7 @@ public class Hand {
 			noOfCards++;
 		}
 		//for log trace
-	 	LogOutput.instance().trace("[addCard] ends");
+	 	LogOutput.traceLog("[addCard] ends");
 	}
 
 	/**
@@ -140,7 +140,7 @@ public class Hand {
 	 */
 	public void addCards(Card[] cards) {
 		//for log trace
-	 	LogOutput.instance().trace("[addCards] begins");
+	 	LogOutput.traceLog("[addCards] begins");
 		if (cards == null) {
 			throw new IllegalArgumentException("Null array");
 		}
@@ -151,7 +151,7 @@ public class Hand {
 			addCard(card);
 		}
 		//for log trace
-	 	LogOutput.instance().trace("[addCards] ends");
+	 	LogOutput.traceLog("[addCards] ends");
 	}
 
 	/**
@@ -165,7 +165,7 @@ public class Hand {
 	 */
 	public void addCards(Collection<Card> cards) {
 		//for log trace
-	 	LogOutput.instance().trace("[addCards] begins");
+	 	LogOutput.traceLog("[addCards] begins");
 		if (cards == null) {
 			throw new IllegalArgumentException("Null collection");
 		}
@@ -176,7 +176,7 @@ public class Hand {
 			addCard(card);
 		}
 		//for log trace
-	 	LogOutput.instance().trace("[addCards] ends");
+	 	LogOutput.traceLog("[addCards] ends");
 	}
 
 	/**
@@ -195,10 +195,10 @@ public class Hand {
 	 */
 	public void removeAllCards() {
 		//for log trace
-	 	LogOutput.instance().trace("[removeAllCards] begins");
+	 	LogOutput.traceLog("[removeAllCards] begins");
 		noOfCards = 0;
 		//for log trace
-	 	LogOutput.instance().trace("[removeAllCards] ends");
+	 	LogOutput.traceLog("[removeAllCards] ends");
 	}
 
 	/** {@inheritDoc} */

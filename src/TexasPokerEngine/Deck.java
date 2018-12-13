@@ -52,7 +52,7 @@ public class Deck {
      */
     public void shuffle() {
     	//for log trace
-	 	LogOutput.instance().trace("[shuffle] begins");
+	 	LogOutput.traceLog("[shuffle] begins");
         for (int oldIndex = 0; oldIndex < NO_OF_CARDS; oldIndex++) {
             int newIndex = random.nextInt(NO_OF_CARDS);
             Card tempCard = cards[oldIndex];
@@ -61,7 +61,7 @@ public class Deck {
         }
         nextCardIndex = 0;
       //for log trace
-	 	LogOutput.instance().trace("[shuffle] ends");
+        LogOutput.traceLog("[shuffle] ends");
     }
     
     /**

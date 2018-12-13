@@ -32,7 +32,7 @@ public class HandValue implements Comparable<HandValue> {
 	 */
 	public HandValue(Hand hand) {
 		//for log trace
-	 	LogOutput.instance().trace("[HandValue] begins");
+	 	LogOutput.traceLog("[HandValue] begins");
 		this.hand = hand;
 		HandEvaluator evaluator = new HandEvaluator(hand);
 		type = evaluator.getType();
@@ -40,7 +40,7 @@ public class HandValue implements Comparable<HandValue> {
 		cards = evaluator.getBestCards();
 		wholeCards = evaluator.getBestWholeCards();
 		//for log trace
-	 	LogOutput.instance().trace("[HandValue] ends");
+	 	LogOutput.traceLog("[HandValue] ends");
 	}
 
 	/**

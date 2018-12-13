@@ -20,6 +20,18 @@ public class LogOutput extends  SFSExtension{
 			inst = new LogOutput();
 		return inst;
 	}
+	
+	public static void traceLog(String output)
+	{
+		//instance().outputString(output);
+		//instance().trace(ExtensionLogLevel.WARN,output);
+	}
+	
+	public void outputString(String output) 
+	{
+		System.out.println(output);
+	}
+	
 	@Override
 	public void init() {
 		// TODO Auto-generated method stub

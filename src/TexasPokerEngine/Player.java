@@ -87,7 +87,7 @@ public class Player implements Comparable<Player> {
 	public void join(boolean _isBot, boolean _isRebuy, Client client, int _pos, String email, String name, int _avatar, BigDecimal cash, int giftCate, int giftVal)
 	{
 		//for log trace
-	 	LogOutput.instance().trace("[join] begins");
+	 	LogOutput.traceLog("[join] begins");
 		playerStatus = PlayerStatus.NEW;
 
 		this.pos = _pos;
@@ -106,7 +106,7 @@ public class Player implements Comparable<Player> {
 		if(this.isBot)
 		{
 			//for log trace
-		 	LogOutput.instance().trace("this.isBot is true");
+		 	LogOutput.traceLog("this.isBot is true");
 			Random rd = new Random();
 			this.name = names[rd.nextInt(5)];
 			this.avatar = rd.nextInt(8) + 1;
@@ -116,7 +116,7 @@ public class Player implements Comparable<Player> {
 
 		resetHand();
 		//for log trace
-	 	LogOutput.instance().trace("[join] ends");
+	 	LogOutput.traceLog("[join] ends");
 	}
 	
 	public void leave()
@@ -156,16 +156,16 @@ public class Player implements Comparable<Player> {
 	 */
 	public void resetHand() {
 		//for log trace
-	 	LogOutput.instance().trace("[player->resetHand] begins");
+	 	LogOutput.traceLog("[player->resetHand] begins");
 		if(isBot)
 		{
 			//for log trace
-		 	LogOutput.instance().trace("case : isBot is true");
+		 	LogOutput.traceLog("case : isBot is true");
 		 	
 			if(System.currentTimeMillis() > joinTime + duration)
 			{
 				//for log trace
-			 	LogOutput.instance().trace("case : System.currentTimeMillis() > joinTime + duration");
+			 	LogOutput.traceLog("case : System.currentTimeMillis() > joinTime + duration");
 				this.join(isBot, isAutoRebuy, client, this.pos, email, name, avatar, cash, giftCategory, giftDetail);
 				return;
 			}
@@ -183,7 +183,7 @@ public class Player implements Comparable<Player> {
 		hand.removeAllCards();
 		resetBet();
 		//for log trace
-	 	LogOutput.instance().trace("[player->resetHand] ends");
+	 	LogOutput.traceLog("[player->resetHand] ends");
 	}
 
 	/**
@@ -191,12 +191,12 @@ public class Player implements Comparable<Player> {
 	 */
 	public void resetBet() {
 		//for log trace
-	 	LogOutput.instance().trace("[resetBet] begins");
+	 	LogOutput.traceLog("[resetBet] begins");
 		bet = BigDecimal.ZERO;
 		if(action != Action.ANTE && action != Action.BUSTED)
 			action = (hasCards() && BigDecimal.ZERO.equals(cash)) ? Action.ALL_IN : null;
 		//for log trace
-	 	LogOutput.instance().trace("[resetBet] ends");
+	 	LogOutput.traceLog("[resetBet] ends");
 	}
 
 	/**
@@ -204,7 +204,7 @@ public class Player implements Comparable<Player> {
 	 */
 	public void setCards(List<Card> cards) {
 		//for log trace
-	 	LogOutput.instance().trace("[setCards] begins");
+	 	LogOutput.traceLog("[setCards] begins");
 		hand.removeAllCards();
 		if (cards != null) {
 			if (cards.size() == 2) {
@@ -216,7 +216,7 @@ public class Player implements Comparable<Player> {
 			}
 		}
 		//for log trace
-	 	LogOutput.instance().trace("[setCards] ends");
+	 	LogOutput.traceLog("[setCards] ends");
 	}
 
 	/**
@@ -313,10 +313,10 @@ public class Player implements Comparable<Player> {
 	 */
 	public void setAction(Action action) {
 		//for log trace
-	 	LogOutput.instance().trace("[setAction] begins");
+	 	LogOutput.traceLog("[setAction] begins");
 		this.action = action;
 		//for log trace
-	 	LogOutput.instance().trace("[setAction] ends");
+	 	LogOutput.traceLog("[setAction] ends");
 	}
 
 	/**
@@ -349,12 +349,12 @@ public class Player implements Comparable<Player> {
 	 */
 	public void postSmallBlind(BigDecimal blind) {
 		//for log trace
-	 	LogOutput.instance().trace("[player->postSmallBlind] begins");
+	 	LogOutput.traceLog("[player->postSmallBlind] begins");
 		//        action = Action.SMALL_BLIND;
 		cash = cash.subtract(blind);
 		bet = bet.add(blind);
 		//for log trace
-	 	LogOutput.instance().trace("[player->postSmallBlind] ends");
+	 	LogOutput.traceLog("[player->postSmallBlind] ends");
 	}
 
 	/**
@@ -365,12 +365,12 @@ public class Player implements Comparable<Player> {
 	 */
 	public void postBigBlind(BigDecimal blind) {
 		//for log trace
-	 	LogOutput.instance().trace("[player->postBigBlind] begins");
+	 	LogOutput.traceLog("[player->postBigBlind] begins");
 		//        action = Action.BIG_BLIND;
 		cash = cash.subtract(blind);
 		bet = bet.add(blind);
 		//for log trace
-	 	LogOutput.instance().trace("[player->postBigBlind] ends");
+	 	LogOutput.traceLog("[player->postBigBlind] ends");
 	}
 
 	/**
@@ -381,7 +381,7 @@ public class Player implements Comparable<Player> {
 	 */
 	public void payCash(BigDecimal amount) {
 		//for log trace
-	 	LogOutput.instance().trace("[payCash] begins");
+	 	LogOutput.traceLog("[payCash] begins");
 //		if (amount.compareTo(cash) > 0) {
 //			throw new IllegalStateException("Player asked to pay more cash than he owns!");
 //		}
@@ -389,7 +389,7 @@ public class Player implements Comparable<Player> {
 		if(cash.compareTo(BigDecimal.ZERO) < 0)
 			cash = BigDecimal.ZERO;
 		//for log trace
-	 	LogOutput.instance().trace("[payCash] ends");
+	 	LogOutput.traceLog("[payCash] ends");
 	}
 
 	/**
@@ -400,11 +400,11 @@ public class Player implements Comparable<Player> {
 	 */
 	public void win(BigDecimal amount) {
 		//for log trace
-	 	LogOutput.instance().trace("[win] begins");
+	 	LogOutput.traceLog("[win] begins");
 		cash = cash.add(amount);
 		winCash = amount;
 		//for log trace
-	 	LogOutput.instance().trace("[win] ends");
+	 	LogOutput.traceLog("[win] ends");
 	}
 
 	/**
