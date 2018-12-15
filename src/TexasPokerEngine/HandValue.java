@@ -3,7 +3,7 @@ package TexasPokerEngine;
 import java.util.ArrayList;
 import java.util.List;
 
-import ZoneExtension.LogOutput;
+import TexasPokerEngine.LogOutput;
 
 public class HandValue implements Comparable<HandValue> {
 

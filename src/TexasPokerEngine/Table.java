@@ -18,7 +18,7 @@ import java.util.TimerTask;
 import java.util.Timer;
 import java.util.TreeMap;
 
-import ZoneExtension.LogOutput;
+import TexasPokerEngine.LogOutput;
 
 public class Table {
 
@@ -43,7 +43,7 @@ public class Table {
 	public int dealerPosition;
 	public Player dealer;
 	public int actorPosition;
-	public Player actor;
+	public Player actor = null;
 	public BigDecimal minBet, bet, minBetDiff;
 	public Player lastBettor;
 	public int raises;
@@ -679,8 +679,6 @@ public class Table {
 						contributePot(actor.getBet());
 						if (activePlayerSize() == 1) {
 							// board update due to update real pot and dealer pot
-							gameExt.updateBoard(round, true);
-							delayTimer(1.5f);
 							// Only one player left, so he wins the entire pot.
 							// notifyBoardUpdated();
 							Player winner = new Player();
@@ -689,10 +687,22 @@ public class Table {
 									winner = player;
 							}
 							BigDecimal amount = getTotalPot();
-							int realPercentage = isProtable() ? 95 : 100;
+							float realPercentage = isProtable() ? 99.5f : 100;
 							BigDecimal realAmount = amount.multiply(new BigDecimal(realPercentage)).divide(new BigDecimal(100));
 							winner.win(realAmount);
-							
+
+							BigDecimal dealerShare = amount.subtract(realAmount);
+							long dealerShareValue = dealerShare.longValue();
+
+							// distribute a profit to dealer
+							if(isProtable())
+							{
+								gameExt.showDealerPot(dealerShareValue);
+								delayTimer(2.5f);
+								gameExt.dealerShareToDealer(dealerShareValue);
+								delayTimer(1.0f);
+							}
+
 							Hand hand = new Hand(board);
 							hand.addCards(winner.getCards());
 							HandValue handValue = new HandValue(hand);
@@ -700,8 +710,6 @@ public class Table {
 							gameExt.updateHandHistory(winner.getName(), realAmount.longValue(), handValue);
 							gameExt.payWinnerChips(winner, realAmount.longValue(), handValue, (long)0);
 
-							BigDecimal dealerShare = amount.subtract(realAmount);
-							long dealerShareValue = dealerShare.longValue();
 							
 							showPlayer = winner;
 							winner.isShow = true;
@@ -711,11 +719,6 @@ public class Table {
 							showPlayer = null;
 
 							delayTimer(4);
-							if(isProtable())
-							{
-								gameExt.dealerShareToDealer(dealerShareValue);
-								delayTimer(4);
-							}
 
 							playersToAct = 0;
 
@@ -883,9 +886,7 @@ public class Table {
 	private void doShowdown() {
 		//for log trace
 	 	LogOutput.traceLog("[doShowdown] begins");
-		// board update due to update real pot and dealer pot
-		gameExt.updateBoard(3, true);
-		delayTimer(1.5f);
+
 		// Determine show order; start with all-in players...
 		List<Player> showingPlayers = new ArrayList<>();
 		for (Pot pot : pots) {
@@ -1030,9 +1031,20 @@ public class Table {
 
 		// Divide winnings.
 		StringBuilder winnerText = new StringBuilder();
-		int realPercentage = isProtable() ? 95 : 100;
+		float realPercentage = isProtable() ? 99.5f : 100;
 		BigDecimal totalRealPot = totalPot.multiply(new BigDecimal(realPercentage)).divide(new BigDecimal(100));
 
+		// distribute dealer share
+		BigDecimal dealerShare = totalPot.subtract(totalRealPot);
+		long dealerShareValue = dealerShare.longValue();
+		if(isProtable()){
+			gameExt.showDealerPot(dealerShareValue);
+			delayTimer(2.5f);
+			gameExt.dealerShareToDealer(dealerShareValue);
+			delayTimer(1.0f);
+		}
+
+		
 		for (Player winner : potDivision.keySet()) {
 			gameExt.showWinnerCards(winner);
 			delayTimer(2);
@@ -1088,15 +1100,6 @@ public class Table {
 			delayTimer(4);
 		}
 
-		BigDecimal dealerShare = totalPot.subtract(totalWon);
-		long dealerShareValue = dealerShare.longValue();
-
-		if(isProtable())
-		{
-			gameExt.dealerShareToDealer(dealerShareValue);
-			delayTimer(4);
-		}
-
 		gameExt.hideWinners();
 		delayTimer(0.5f);
 
@@ -1113,6 +1116,7 @@ public class Table {
 				continue;
 			if (player.playerStatus == PlayerStatus.ACTIVE) {
 				gameExt.addPlayInfo(player.getEmail(), player.winCash.longValue());
+				gameExt.update_daily_hand(player.getEmail(), player.winCash.longValue());
 			}
 		}
 		//for log trace

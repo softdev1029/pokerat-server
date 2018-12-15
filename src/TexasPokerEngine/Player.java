@@ -8,7 +8,7 @@ import java.util.Random;
 import com.smartfoxserver.v2.db.IDBManager;
 import com.smartfoxserver.v2.extensions.ExtensionLogLevel;
 
-import ZoneExtension.LogOutput;
+import TexasPokerEngine.LogOutput;
 
 import TexasPokerAction.Action;
 

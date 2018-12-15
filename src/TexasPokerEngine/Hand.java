@@ -1,7 +1,7 @@
 package TexasPokerEngine;
 
 import java.util.Collection;
-import ZoneExtension.LogOutput;
+import TexasPokerEngine.LogOutput;
 
 public class Hand {
 
