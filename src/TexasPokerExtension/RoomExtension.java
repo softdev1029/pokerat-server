@@ -210,7 +210,7 @@ public class RoomExtension extends SFSExtension implements Client {
 		return null;
 	}
 
-	public void readyPlayer(String email, boolean isAutomatic) {
+	public void readyPlayer(String email, boolean isAutomatic, int sitPos) {
 		for (Player player : table.players) {
 			if (player.playerStatus != PlayerStatus.NONE) {
 				if (email.compareTo(player.getEmail()) == 0) {
@@ -230,24 +230,41 @@ public class RoomExtension extends SFSExtension implements Client {
 		// }
 		// }
 		if (isAutomatic) {
-			for (int i = 0; i < tableSize; i++) {
+			if(sitPos == -1) {
+				for (int i = 0; i < tableSize; i++) {
+					boolean flag = true;
+					for (Player player : table.players) {
+						if (player.playerStatus != PlayerStatus.NONE) {
+							if (player.getPos() == i)
+								flag = false;
+						}
+					}
+					// for(Player player : table.newPlayers) {
+					// if(player.getPos() == i)
+					// flag = false;
+					// }
+					if (flag) {
+						ISFSObject obj = new SFSObject();
+						obj.putInt("pos", i);
+						if (getParentRoom().getUserByName(email) != null)
+							send("texas_autojoin", obj, getParentRoom().getUserByName(email));
+						break;
+					}
+				}
+			}
+			else if(sitPos < tableSize){
 				boolean flag = true;
 				for (Player player : table.players) {
 					if (player.playerStatus != PlayerStatus.NONE) {
-						if (player.getPos() == i)
+						if (player.getPos() == sitPos)
 							flag = false;
 					}
 				}
-				// for(Player player : table.newPlayers) {
-				// if(player.getPos() == i)
-				// flag = false;
-				// }
 				if (flag) {
 					ISFSObject obj = new SFSObject();
-					obj.putInt("pos", i);
+					obj.putInt("pos", sitPos);
 					if (getParentRoom().getUserByName(email) != null)
 						send("texas_autojoin", obj, getParentRoom().getUserByName(email));
-					break;
 				}
 			}
 		}

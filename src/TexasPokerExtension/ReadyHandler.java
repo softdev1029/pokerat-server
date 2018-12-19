@@ -14,7 +14,7 @@ public class ReadyHandler extends BaseClientRequestHandler
 	{
 		RoomExtension gameExt = (RoomExtension) getParentExtension();
 		if (user.isPlayer()) {
-			gameExt.readyPlayer(user.getName(), params.getBool("automatic"));
+			gameExt.readyPlayer(user.getName(), params.getBool("automatic"), params.getInt("sitPos"));
 		}
 	}
 }

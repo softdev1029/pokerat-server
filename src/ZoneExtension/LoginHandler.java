@@ -40,7 +40,7 @@ public class LoginHandler extends BaseClientRequestHandler
 					{
 						obj = setBonusNewAccount(obj);
 					}					
-					response.putBool("daily_bonus", setDailyBonus(user, obj));
+					UpdateLastLoginTime(obj);
 					sendNotificationToFriends(params.getUtfString("email"), obj.getUtfString("name"));
 					response.putBool("success", true);
 					response.putSFSObject("info", getUserInfo(params.getUtfString("email")));
@@ -54,8 +54,7 @@ public class LoginHandler extends BaseClientRequestHandler
 					{
 						obj = setBonusNewAccount(obj);
 					}
-					response.putBool("daily_bonus", setDailyBonus(user, obj));
-					
+					UpdateLastLoginTime(obj);
 					sendNotificationToFriends(params.getUtfString("email"), obj.getUtfString("name"));
 					response.putBool("success", true);
 					response.putSFSObject("info", getUserInfo(params.getUtfString("email")));
@@ -73,13 +72,12 @@ public class LoginHandler extends BaseClientRequestHandler
 				{
 					ISFSObject obj1 = updateFacebookUser(params);
 					isFirstLogIn = isFirstLogin(obj1);
+					response.putBool("first_login", isFirstLogIn);
 					if(isFirstLogIn)
 					{
 						obj1 = setBonusNewAccount(obj1);
 					}
-					response.putBool("first_login", isFirstLogIn);
-					response.putBool("daily_bonus", setDailyBonus(user, obj1));
-					
+					UpdateLastLoginTime(obj1);
 					sendNotificationToFriends(params.getUtfString("email"), obj1.getUtfString("name"));
 					response.putBool("success", true);
 					response.putSFSObject("info", getUserInfo(params.getUtfString("email")));
@@ -91,7 +89,7 @@ public class LoginHandler extends BaseClientRequestHandler
 					{
 						obj = setBonusNewAccount(obj);
 					}
-					response.putBool("daily_bonus", setDailyBonus(user, obj));					
+					UpdateLastLoginTime(obj);
 					sendNotificationToFriends(params.getUtfString("email"), res.getSFSObject(0).getUtfString("name"));
 					response.putBool("success", true);
 					response.putSFSObject("info", getUserInfo(params.getUtfString("email")));
@@ -129,6 +127,18 @@ public class LoginHandler extends BaseClientRequestHandler
 			trace(ExtensionLogLevel.WARN, "SQL Failed: " + e.toString());
 		}
 		return getUserInfo(dataObject.getUtfString("email"));
+	}
+	
+	private void UpdateLastLoginTime(ISFSObject dataObject)
+	{
+		long curTime = System.currentTimeMillis();
+		IDBManager dbManager = getParentExtension().getParentZone().getDBManager();
+		String sql = "UPDATE user SET last_login=" + curTime + " WHERE email=\"" + dataObject.getUtfString("email") + "\"";
+		try {
+			dbManager.executeUpdate(sql, new Object[] {});
+		} catch (SQLException e) {
+			trace(ExtensionLogLevel.WARN, "SQL Failed: " + e.toString());
+		}
 	}
 	
 	public boolean setDailyBonus(User user, ISFSObject dataObject)
