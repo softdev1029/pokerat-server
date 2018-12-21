@@ -95,7 +95,7 @@ public class Table {
 	
 	public boolean isProtable()
 	{
-		return bigBlind.longValue() == 10000000L;
+		return bigBlind.longValue() >= 10000000L;
 	}
 
 	public int playerSize() {

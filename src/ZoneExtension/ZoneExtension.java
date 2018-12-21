@@ -67,6 +67,8 @@ public class ZoneExtension extends SFSExtension {
 		addRequestHandler("get_daily_bonus", GetDailyBonusHandler.class);
 		addRequestHandler("update_daily_bonus", UpdateDailyBonusHandler.class);
 
+		addRequestHandler("get_store_event", GetStoreEventHandler.class);
+		addRequestHandler("store_buy", StoreBuyHandler.class);
 	}
 
 	@Override
