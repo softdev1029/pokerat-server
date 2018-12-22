@@ -1352,7 +1352,7 @@ CREATE TABLE `transfer_gift` (
   `to_email` varchar(50) NOT NULL,
   `type` tinyint(4) NOT NULL,
   `value` bigint(20) NOT NULL,
-  `time` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `time` datetime NOT NULL,
   `status` tinyint(4) NOT NULL DEFAULT '0',
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
