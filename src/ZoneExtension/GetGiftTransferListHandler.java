@@ -62,6 +62,6 @@ public class GetGiftTransferListHandler extends BaseClientRequestHandler
 		} catch (SQLException e) {
 			trace(ExtensionLogLevel.WARN, "SQL Failed: " + e.toString());
 		}
-		return null;		
+		return new SFSArray();		
 	}
 }

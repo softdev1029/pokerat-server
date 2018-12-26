@@ -200,8 +200,10 @@ public class RoomExtension extends SFSExtension implements Client {
 			return obj;
 		} else if (cmdName.equals("get_user_balance")) {
 			for (Player player : table.players) {
-				if (player.getEmail().compareTo((String) params) == 0) {
-					return player.getCash().longValue();
+				if (player.playerStatus != PlayerStatus.NONE) {
+					if (player.getEmail().compareTo((String) params) == 0) {
+						return player.getCash().longValue();
+					}
 				}
 			}
 			return 0;
@@ -277,18 +279,11 @@ public class RoomExtension extends SFSExtension implements Client {
 		if (!table.isRunning()) {
 			if (table.playerSize() >= 2)
 			{
-				table.run();
-
-/*				
 				new Thread(new Runnable() {
 				     public void run() {
-						while(true)
-						{
-							table.run();
-						}
+						table.run();
 				     }
 				}).start();
-*/				
 			}
 		}
 	}
@@ -391,17 +386,11 @@ public class RoomExtension extends SFSExtension implements Client {
 		if (!table.isRunning()) {
 			if (table.playerSize() >= 2)
 			{
-				table.run();
-/*
 				new Thread(new Runnable() {
 				     public void run() {
-						while(true)
-						{
-							table.run();
-						}
+						table.run();
 				     }
 				}).start();
-*/				
 			}
 		}
 	}
@@ -474,6 +463,7 @@ public class RoomExtension extends SFSExtension implements Client {
 				} else {
 					player.playerStatus = PlayerStatus.ACTIVE;
 					player.resetHand();
+					player.setAction(null);
 				}
 			}
 		}

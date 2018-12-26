@@ -348,7 +348,7 @@ public class Table {
 	}
 
 	public int getNextActivePos(int pos) {
-		for (int i = 1; i < tableSize; i++) {
+		for (int i = 1; i <= tableSize; i++) {
 			int k = (i + pos) % tableSize;
 			if (players[k].playerStatus == PlayerStatus.ACTIVE && players[k].isActive)
 				return k;

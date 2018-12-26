@@ -40,7 +40,7 @@ public class GetRoomListHandler extends BaseClientRequestHandler
 					else if(blind == obj.getLong("blind"))
 						res.addSFSObject(obj);
 				}
-				if(type == 2 && blind == obj.getLong("min_bet"))
+				if(type == 3 && blind == obj.getLong("min_bet"))
 					res.addSFSObject(obj);
 			}
 		}

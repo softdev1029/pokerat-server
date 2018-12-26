@@ -80,6 +80,7 @@ public class Player implements Comparable<Player> {
 	 */
 	public Player() {
 		playerStatus = PlayerStatus.NONE;
+		email = "";
 		hand = new Hand();
 		resetHand();
 	}
