@@ -31,8 +31,12 @@ public class StoreBuyHandler extends BaseClientRequestHandler
 			
 			// make user update his profile
 			ISFSObject obj = new SFSObject();
-			if(user != null)
-				send("store_buy", obj, user);
+			if(user != null) {
+				send("purchase_update", obj, user);
+				
+				if(type == 5) // welcome bonus
+					send("welcome_bonus", obj, user);
+			}
 		}
 	}
 	
@@ -40,12 +44,13 @@ public class StoreBuyHandler extends BaseClientRequestHandler
 	{
 		IDBManager dbManager = getParentExtension().getParentZone().getDBManager();
 		
-		String sql = "INSERT INTO store_buy(email, type, price, value)"
+		String sql = "INSERT INTO store_buy(email, type, price, value, created_at)"
 				+ " VALUES (\""
 				+ email + "\","
 				+ type + ","
 				+ price + ","
-				+ value + ")";
+				+ value + "," 
+				+ System.currentTimeMillis() + ")";
         try {
 			dbManager.executeInsert(sql, new Object[] {});
             return true;
@@ -105,6 +110,7 @@ public class StoreBuyHandler extends BaseClientRequestHandler
 		} catch (SQLException e) {
 			trace(ExtensionLogLevel.WARN, "SQL Failed: " + e.toString());
 		}
+		
 		return null;
 	}
 }

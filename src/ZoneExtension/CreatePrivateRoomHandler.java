@@ -3,6 +3,8 @@ package ZoneExtension;
 import java.util.ArrayList;
 import java.util.List;
 
+import ZoneExtension.ZoneExtension.DynamicRoomType;
+
 import com.smartfoxserver.v2.api.CreateRoomSettings;
 import com.smartfoxserver.v2.api.CreateRoomSettings.RoomExtensionSettings;
 import com.smartfoxserver.v2.entities.User;
@@ -27,52 +29,24 @@ public class CreatePrivateRoomHandler extends BaseClientRequestHandler
 		boolean speed = params.getBool("speed");
 		
 		SFSZone zone = (SFSZone) ((ZoneExtension)getParentExtension()).getParentZone();
-		
 		Room room = zone.getRoomByName(tableName);
 		if(room != null && room.isDynamic())
 			getApi().removeRoom(room);
-				
-		CreateRoomSettings settings = new CreateRoomSettings();
-		settings.setGame(true);
-		settings.setName(tableName);
-		settings.setGroupId("TexasPoker");
-		settings.setDynamic(true);
-		settings.setMaxUsers(20);
-		List<RoomVariable> roomVariables = new ArrayList<RoomVariable>();
-		SFSRoomVariable rv = new SFSRoomVariable("table_size", seat);
-		roomVariables.add(rv);
-		rv = new SFSRoomVariable("blind_type", blind);
-		roomVariables.add(rv);
-		rv = new SFSRoomVariable("speed", speed);
-		roomVariables.add(rv);
-		rv = new SFSRoomVariable("is_private_table", true);
-		roomVariables.add(rv);
-		rv = new SFSRoomVariable("empty", true);
-		roomVariables.add(rv);		
-		settings.setRoomVariables(roomVariables);
-		settings.setAutoRemoveMode(SFSRoomRemoveMode.NEVER_REMOVE);
-		
-		RoomExtensionSettings extension = new RoomExtensionSettings("Pokerat", "TexasPokerExtension.RoomExtension");
-		settings.setExtension(extension);
-		
-		ISFSObject response = new SFSObject();
-		try {
-			getApi().createRoom(((ZoneExtension)getParentExtension()).getParentZone(), settings, null);
 
+		boolean result = ((ZoneExtension)getParentExtension()).CreateRoom(blind, seat, speed, true, "TexasPoker", DynamicRoomType.RT_PRIVATE, tableName);
+
+		ISFSObject response = new SFSObject();
+		if(result){
 			response.putBool("success", true);
 			response.putUtfString("table_name", tableName);
 			response.putInt("size", seat);
 			send("create_private_table", response, user);
 			
-		} catch (SFSCreateRoomException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		} else
+		{
 			response.putBool("success", false);
 			send("create_private_table", response, user);
 		}
-		 
-
-		
 	}
 }
 

@@ -26,6 +26,7 @@ import TexasPokerAction.BetAction;
 import TexasPokerAction.RaiseAction;
 import TexasPokerBot.BasicBot;
 import ZoneExtension.ZoneExtension;
+import ZoneExtension.ZoneExtension.DynamicRoomType;
 import TexasPokerExtension.LogOutput;
 
 import com.smartfoxserver.v2.core.SFSEventType;
@@ -39,6 +40,7 @@ import com.smartfoxserver.v2.entities.data.SFSArray;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 import com.smartfoxserver.v2.entities.variables.RoomVariable;
 import com.smartfoxserver.v2.extensions.ExtensionLogLevel;
+import com.smartfoxserver.v2.extensions.ISFSExtension;
 import com.smartfoxserver.v2.extensions.SFSExtension;
 
 public class RoomExtension extends SFSExtension implements Client {
@@ -47,6 +49,7 @@ public class RoomExtension extends SFSExtension implements Client {
 
 	private static final TableType TABLE_TYPE = TableType.NO_LIMIT;
 
+	private int blindType = 0;
 	private int tableSize = 9;
 	private boolean isFast = true;
 	public BigDecimal minBuyin = BigDecimal.valueOf(500);
@@ -74,7 +77,7 @@ public class RoomExtension extends SFSExtension implements Client {
 
 	private String dailyHandError;
 	
-	public boolean isPrivate = false;
+	private DynamicRoomType dynamicRoomType = DynamicRoomType.RT_DEFAULT;
 	// for debugging
 	public String whereis() {
 		StackTraceElement ste = Thread.currentThread().getStackTrace()[2];
@@ -122,14 +125,24 @@ public class RoomExtension extends SFSExtension implements Client {
 		USER_WAITING_TIME = isFast ? 20 : 20;
 
 		tableSize = this.getParentRoom().getVariable("table_size").getIntValue();
-		int blindType = this.getParentRoom().getVariable("blind_type").getIntValue();
+		blindType = this.getParentRoom().getVariable("blind_type").getIntValue();
 		boolean isEmpty = false;
 		RoomVariable emptyVal = this.getParentRoom().getVariable("empty");
 		if (emptyVal != null)
 			isEmpty = emptyVal.getBoolValue();
-		RoomVariable is_private_table = this.getParentRoom().getVariable("is_private_table");
-		if(is_private_table != null && is_private_table.getBoolValue() == true)
-			isPrivate = true;
+		
+		RoomVariable tableType = this.getParentRoom().getVariable("dynamic_table_type");
+		
+		if(tableType != null)
+		{
+			String strTableType = tableType.getStringValue();
+			if(strTableType == DynamicRoomType.RT_PRIVATE.toString())
+				dynamicRoomType = DynamicRoomType.RT_PRIVATE;
+			else if(strTableType == DynamicRoomType.RT_AUTO_CREATE.toString())
+				dynamicRoomType = DynamicRoomType.RT_AUTO_CREATE;
+		}
+		
+			
 		roomName = this.getGameRoom().getName();
 
 		bigBlind = BigDecimal.valueOf(TEXAS_INFO[blindType].blind);
@@ -166,7 +179,7 @@ public class RoomExtension extends SFSExtension implements Client {
 	@Override
 	public Object handleInternalMessage(String cmdName, Object params) {
 		if (cmdName.equals("get_room_info")) {
-			if(isPrivate)
+			if(dynamicRoomType == DynamicRoomType.RT_PRIVATE)
 				return null;
 			ISFSObject obj = new SFSObject();
 			obj.putUtfString("name", getParentRoom().getName());
@@ -340,7 +353,16 @@ public class RoomExtension extends SFSExtension implements Client {
 	 	LogOutput.traceLog("[sendRebuy] begins");
 	 	//trace("[sendRebuy] begins");
 		if (!player.isBot() && getParentRoom().getUserByName(player.getEmail()) != null)
-			send("texas_rebuy", new SFSObject(), getParentRoom().getUserByName(player.getEmail()));
+		{
+			long amount = getPlayerChipcount(player.getEmail());
+			int blindType = this.getParentRoom().getVariable("blind_type").getIntValue();
+			long minBuyin = TEXAS_INFO[blindType].minBuyin;
+			ISFSObject obj = new SFSObject();
+			obj.putLong("Chip", amount);
+			obj.putLong("minBuyin",minBuyin);
+			obj.putInt("blindtype", blindType);
+			send("texas_rebuy",obj,getParentRoom().getUserByName(player.getEmail()));
+		}
 		//for log trace
 	 	LogOutput.traceLog("[sendRebuy] ends");
 	 	//trace("[sendRebuy] ends");
@@ -393,8 +415,32 @@ public class RoomExtension extends SFSExtension implements Client {
 				}).start();
 			}
 		}
-	}
+/*		
+		String groupName = getParentRoom().getGroupId();
+		ISFSObject obj = new SFSObject();
+		obj.putUtfString("groupName", groupName);
+		obj.putInt("blind", blindType);
+		obj.putInt("tableSize", tableSize);
+		obj.putBool("speed", isFast);
 
+		getParentZone().getExtension().handleInternalMessage("auto_create_empty_table", obj);
+*/		
+	}
+	
+	public void autoDeleteEmptyRoom()
+	{
+/*		
+		String groupName = getParentRoom().getGroupId();
+		ISFSObject obj = new SFSObject();
+		obj.putUtfString("groupName", groupName);
+		obj.putInt("blind", blindType);
+		obj.putInt("tableSize", tableSize);
+		obj.putBool("speed", isFast);
+
+		getParentZone().getExtension().handleInternalMessage("auto_delete_empty_table", obj);
+*/		
+	}
+	
 	public void leavePlayer(String email, int status) {
 		for (Player player : table.players) {
 			if (player.playerStatus == PlayerStatus.NONE)
@@ -1200,37 +1246,39 @@ public class RoomExtension extends SFSExtension implements Client {
 			resObj.putUtfString("action" + i, action.getName());
 			i++;
 		}
-		send("texas_userinput", resObj, getParentRoom().getUserByName(playerToNotify.getEmail()));
-
-		timer = new Timer();
-		task = new TimerTask() {
-			@Override
-			public void run() {
-				// Your database code here
-				if (selectedAction == null) {
-					selectedAction = Action.NO_RESPONSE;
-					synchronized (monitor) {
-						monitor.notifyAll();
+		if(playerToNotify.getCash().longValue() != 0)
+		{
+			send("texas_userinput", resObj, getParentRoom().getUserByName(playerToNotify.getEmail()));
+	
+			timer = new Timer();
+			task = new TimerTask() {
+				@Override
+				public void run() {
+					// Your database code here
+					if (selectedAction == null) {
+						selectedAction = Action.NO_RESPONSE;
+						synchronized (monitor) {
+							monitor.notifyAll();
+						}
+					}
+				}
+			};
+			timer.schedule(task, ((isFast) ? 20 : 20) * 1000);
+	
+			while (selectedAction == null) {
+				// Wait for the user to select an action.
+				synchronized (monitor) {
+					try {
+						monitor.wait();
+					} catch (InterruptedException e) {
+						// Ignore.
 					}
 				}
 			}
-		};
-		timer.schedule(task, ((isFast) ? 20 : 20) * 1000);
-
-		while (selectedAction == null) {
-			// Wait for the user to select an action.
-			synchronized (monitor) {
-				try {
-					monitor.wait();
-				} catch (InterruptedException e) {
-					// Ignore.
-				}
-			}
+			timer.cancel();
+			if (getParentRoom().getUserByName(playerToNotify.getEmail()) != null)
+				send("texas_hidebuttons", new SFSObject(), getParentRoom().getUserByName(playerToNotify.getEmail()));
 		}
-		timer.cancel();
-		if (getParentRoom().getUserByName(playerToNotify.getEmail()) != null)
-			send("texas_hidebuttons", new SFSObject(), getParentRoom().getUserByName(playerToNotify.getEmail()));
-
 		return selectedAction;
 	}
 
