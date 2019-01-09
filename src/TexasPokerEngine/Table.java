@@ -589,8 +589,8 @@ public class Table {
 				rotateActor();
 				Action action;
 				if (actor.isAllIn()) {
-					// Player is all-in, so must check.
-					action = Action.CHECK;
+					// Player is all-in
+					action = Action.ALL_IN;
 					playersToAct--;
 				} else {
 					// Otherwise allow client to act.

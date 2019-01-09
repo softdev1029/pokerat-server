@@ -33,10 +33,10 @@ public class CreatePrivateRoomHandler extends BaseClientRequestHandler
 		if(room != null && room.isDynamic())
 			getApi().removeRoom(room);
 
-		boolean result = ((ZoneExtension)getParentExtension()).CreateRoom(blind, seat, speed, true, "TexasPoker", DynamicRoomType.RT_PRIVATE, tableName);
+		room = ((ZoneExtension)getParentExtension()).CreateRoom(blind, seat, speed, true, "TexasPoker", DynamicRoomType.RT_PRIVATE, tableName);
 
 		ISFSObject response = new SFSObject();
-		if(result){
+		if(room != null){
 			response.putBool("success", true);
 			response.putUtfString("table_name", tableName);
 			response.putInt("size", seat);

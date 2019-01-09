@@ -195,7 +195,7 @@ public class Player implements Comparable<Player> {
 	 	LogOutput.traceLog("[resetBet] begins");
 		bet = BigDecimal.ZERO;
 		if(action != Action.ANTE && action != Action.BUSTED)
-			action = (hasCards() && BigDecimal.ZERO.equals(cash)) ? Action.ALL_IN : null;
+			action = (hasCards() && isZero(cash)) ? Action.ALL_IN : null;
 		//for log trace
 	 	LogOutput.traceLog("[resetBet] ends");
 	}
@@ -326,9 +326,18 @@ public class Player implements Comparable<Player> {
 	 * @return True if all-in, otherwise false.
 	 */
 	public boolean isAllIn() {
-		return hasCards() && (BigDecimal.ZERO.equals(cash));
+		//boolean flag = hasCards() && (BigDecimal.ZERO.equals(cash));
+		return(hasCards() && (isZero(cash)));
 	}
-
+	public boolean isZero(BigDecimal value){
+		boolean isZero = false;
+		if(value != null){
+			double amount = value.doubleValue();
+			if(amount == 0)
+				isZero = true;
+		}
+		return isZero;
+	}
 	public boolean isBot() {
 		return isBot;
 	}

@@ -24,28 +24,6 @@ public class GetRoomListHandler extends BaseClientRequestHandler
 		int type = params.getInt("type");
 		long blind = params.getLong("blind");
 
-		ISFSArray res = new SFSArray();
-		List<Room> roomList = getParentExtension().getParentZone().getRoomList();
-		for(Room room : roomList)
-		{
-			if(!room.isGame() || room.getGroupId().compareTo("default") == 0)
-				continue;
-//			System.out.println(room.getName() + "," + room.getGroupId() + "," + room.getExtension());
-			ISFSObject obj = (ISFSObject) room.getExtension().handleInternalMessage("get_room_info", null);
-			if(obj != null && obj.getInt("type") == type)
-			{
-				if(type == 0) {
-					if(blind >= 10000000 && obj.getLong("blind") >= 10000000)
-						res.addSFSObject(obj);
-					else if(blind == obj.getLong("blind"))
-						res.addSFSObject(obj);
-				}
-				if(type == 3 && blind == obj.getLong("min_bet"))
-					res.addSFSObject(obj);
-			}
-		}
-		ISFSObject response = new SFSObject();	
-		response.putSFSArray("array", res);
-		send("get_room_list", response, user);
+		zoneExt.updateRoomList(type,  blind, user);
 	}
 }

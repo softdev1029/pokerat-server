@@ -63,7 +63,7 @@ public class RoomExtension extends SFSExtension {
 		if (cmdName.equals("get_room_info")) {
 			ISFSObject obj = new SFSObject();
 			obj.putUtfString("name", getParentRoom().getName());
-			obj.putInt("type", 3);
+			obj.putInt("type", 2);
 			obj.putLong("min_buyin", minBuyin);
 			obj.putLong("max_buyin", maxBuyin);
 			obj.putLong("min_bet", minBet);
