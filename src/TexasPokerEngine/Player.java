@@ -53,7 +53,7 @@ public class Player implements Comparable<Player> {
 	public boolean isAddChip = false;
 	public long newChip;
 
-	private boolean isBot;
+	private boolean isBot = false;
 	public boolean isActive = false;
 	public boolean isExit = true;
 	public boolean isDone = false;

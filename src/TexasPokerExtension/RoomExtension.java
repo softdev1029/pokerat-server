@@ -72,7 +72,7 @@ public class RoomExtension extends SFSExtension implements Client {
 	private Action selectedAction;
 	private final Object monitor = new Object();
 	private boolean prevShow = false;
-	
+	int nActNum;
 	public String roomName;
 
 	private String dailyHandError;
@@ -97,7 +97,7 @@ public class RoomExtension extends SFSExtension implements Client {
 		}
 	}
 
-	private static TableInfo[] TEXAS_INFO = { new TableInfo(2, 20, 40), new TableInfo(10, 100, 1000),
+	public static TableInfo[] TEXAS_INFO = { new TableInfo(2, 20, 40), new TableInfo(10, 100, 1000),
 			new TableInfo(50, 500, 20000), new TableInfo(200, 2000, 50000), new TableInfo(1000, 10000, 200000),
 			new TableInfo(4000, 40000, 1000000), new TableInfo(20000, 200000, 4000000),
 			new TableInfo(100000, 1000000, 20000000), new TableInfo(500000, 5000000, 100000000),
@@ -187,7 +187,7 @@ public class RoomExtension extends SFSExtension implements Client {
 	@Override
 	public Object handleInternalMessage(String cmdName, Object params) {
 		if (cmdName.equals("get_room_info")) {
-			if(dynamicRoomType == DynamicRoomType.RT_PRIVATE)
+			if(isPrivate())
 				return null;
 			ISFSObject obj = new SFSObject();
 			obj.putUtfString("name", getParentRoom().getName());
@@ -199,6 +199,7 @@ public class RoomExtension extends SFSExtension implements Client {
 			obj.putInt("size", tableSize);
 			obj.putInt("player_num", table.playerSize());
 			obj.putBool("speed", isFast);
+			boolean isEmpty = true;
 			ISFSArray playerList = new SFSArray();
 			for (Player player : table.players) {
 				if (player.playerStatus != PlayerStatus.NONE) {
@@ -208,8 +209,11 @@ public class RoomExtension extends SFSExtension implements Client {
 					obj1.putUtfString("name", player.getName());
 					obj1.putLong("chip", player.getCash().longValue());
 					playerList.addSFSObject(obj1);
+					if(!player.isBot())
+						isEmpty = false;
 				}
 			}
+			obj.putBool("is_empty", isEmpty);
 			// for(Player player : table.newPlayers) {
 			// ISFSObject obj1 = new SFSObject();
 			// obj1.putInt("pos", player.getPos());
@@ -424,7 +428,7 @@ public class RoomExtension extends SFSExtension implements Client {
 			}
 		}
 		
-		if(dynamicRoomType != DynamicRoomType.RT_PRIVATE)
+		if(!isPrivate())
 		{
 			String groupName = getParentRoom().getGroupId();
 			ISFSObject obj = new SFSObject();
@@ -439,7 +443,7 @@ public class RoomExtension extends SFSExtension implements Client {
 	
 	public void updateRoomList()
 	{
-		if(dynamicRoomType != DynamicRoomType.RT_PRIVATE)
+		if(!isPrivate())
 		{
 			String groupName = getParentRoom().getGroupId();
 			ISFSObject obj = new SFSObject();
@@ -945,15 +949,25 @@ public class RoomExtension extends SFSExtension implements Client {
 				for (Card card : handValue.wholeCards)
 					wholeArray.add(card.hashCode());
 			}
+			if(!table.actor.isActive)
+				nActNum--;
 			resObj.putIntArray("cards", cardArray);
 			resObj.putIntArray("whole", wholeArray);
+			resObj.putInt("ActNum", nActNum);
 			if (getParentRoom().getUserList().size() > 0)
 				send("texas_showbestcards", resObj, getParentRoom().getUserList());
 			return;
 		}
+		nActNum = 0;
 		for (Player player : table.players) {
 			if (player.playerStatus == PlayerStatus.NONE || player.isBot())
+			{
+				if(player.isBot() && player.isActive)
+					nActNum++;
 				continue;
+			}
+			if(player.isActive)
+				nActNum++;
 			Player showPlayer = (table.showPlayer == null) ? player : table.showPlayer;
 			Hand hand = new Hand(table.board);
 			hand.addCards(showPlayer.getCards());
@@ -969,6 +983,7 @@ public class RoomExtension extends SFSExtension implements Client {
 			for (Card card : cards)
 				cardArray.add(card.hashCode());
 			resObj.putIntArray("cards", cardArray);
+			resObj.putInt("ActNum", nActNum);
 			if (getParentRoom().getUserByName(player.getEmail()) != null)
 				send("texas_showbestcards", resObj, getParentRoom().getUserByName(player.getEmail()));
 		}
@@ -1010,7 +1025,7 @@ public class RoomExtension extends SFSExtension implements Client {
 		obj.putInt("pos", player.getPos());
 		obj.putInt("card1", cards[0].hashCode());
 		obj.putInt("card2", cards[1].hashCode());
-
+		obj.putInt("ActNum", nActNum);
 		if (getParentRoom().getUserList().size() > 0)
 			send("texas_show_winner_cards", obj, getParentRoom().getUserList());
 		//for log trace
@@ -1347,10 +1362,11 @@ public class RoomExtension extends SFSExtension implements Client {
 			payPlayerChipcount(email, amount);
 		boolean isMoney = false;
 		long chip = getPlayerChipcount(email);
+		long coin = getPlayerCoin(email);
 		for (Player player : table.players) {
 			if (player.playerStatus == PlayerStatus.NONE)
 				continue;
-			if(chip >= amount){
+			if((!isCoin && (chip >= amount)) || (isCoin && (coin >= amount))){
 				if (isAll || (pos == player.getPos())) {
 					player.setGift(category, detail);
 					if (!player.isBot())
@@ -1362,6 +1378,7 @@ public class RoomExtension extends SFSExtension implements Client {
 		params.putBool("isMoney", isMoney);
 		params.putLong("chip",chip);
 		params.putLong("amount", amount);
+		params.putLong("Coinamount", coin);
 		// for(Player player : table.newPlayers) {
 		// if(isAll || (pos == player.getPos())) {
 		// player.giftCategory = category;
@@ -1628,6 +1645,17 @@ public class RoomExtension extends SFSExtension implements Client {
 			trace(ExtensionLogLevel.WARN, "SQL Failed: " + e.toString());
 		}
 		return lv;
+	}
+	
+	public boolean isPrivate()
+	{
+		return dynamicRoomType == DynamicRoomType.RT_PRIVATE;
+
+	}
+	public boolean isDefault()
+	{
+		return dynamicRoomType == DynamicRoomType.RT_DEFAULT;
+
 	}
 
 }

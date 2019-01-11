@@ -15,9 +15,8 @@ public class LeaveHandler extends BaseServerEventHandler
 		User user = (User) event.getParameter(SFSEventParam.USER);
 		gameExt.leavePlayer(user.getName(), 0);
 		if (gameExt.getParentRoom().getUserList().size() == 0) {
-			if(gameExt.getParentRoom().isDynamic()){
+			if(gameExt.isPrivate()){
 				getApi().removeRoom(gameExt.getParentRoom());
-				gameExt.updateRoomList();
 			}
 			else{
 				gameExt.autoDeleteEmptyRoom();

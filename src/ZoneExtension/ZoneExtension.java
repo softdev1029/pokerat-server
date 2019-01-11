@@ -16,8 +16,8 @@ import com.smartfoxserver.v2.core.SFSEventType;
 import com.smartfoxserver.v2.db.IDBManager;
 import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.SFSRoom;
-import com.smartfoxserver.v2.entiupdateRoomList
-ver.v2.entities.SFSZone;
+import com.smartfoxserver.v2.entities.SFSRoomRemoveMode;
+import com.smartfoxserver.v2.entities.SFSZone;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSArray;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
@@ -103,7 +103,7 @@ public class ZoneExtension extends SFSExtension {
 	
 	public void createTexasDefaultRooms()
 	{
-		int blindTypeCount = 15;
+		int blindTypeCount = RoomExtension.TEXAS_INFO.length;
 		int seatTypeCount = 2;
 		int[][] roomCounts = new int[blindTypeCount][seatTypeCount];
 		List<Room> roomList = getParentZone().getRoomList();
@@ -128,7 +128,7 @@ public class ZoneExtension extends SFSExtension {
 			for(int j = 0; j < seatTypeCount; j++)
 			{
 				int seat = j == 0 ? 5 : 9;
-				boolean isFast = false;
+				boolean isFast = true;
 				while(roomCounts[i][j] < 2)
 				{
 					CreateRoom(i, seat, isFast, true, "TexasPoker", DynamicRoomType.RT_DEFAULT, null);
@@ -148,7 +148,6 @@ public class ZoneExtension extends SFSExtension {
 				continue;
 			
 			int userCount = room.getUserList().size();
-			trace(ExtensionLogLevel.INFO, room.getName() + "'s user count = " + userCount);
 			int tableSize = 9;
 			RoomVariable v = room.getVariable("table_size");
 			if(v == null)
@@ -163,7 +162,7 @@ public class ZoneExtension extends SFSExtension {
 			curBlindType = v.getIntValue();
 			if(blindType != curBlindType)
 				continue;
-			if(room.getGroupId() != groupName)
+			if(!room.getGroupId().equals(groupName))
 				continue;
 			if(userCount == 0)
 				emptyRoomList.add(room);
@@ -245,6 +244,29 @@ public class ZoneExtension extends SFSExtension {
 					res.addSFSObject(obj);
 			}
 		}
+		
+		ISFSArray emptyRoomArray = new SFSArray();
+		ISFSArray noEmptyRoomArray = new SFSArray();
+		
+		for(int i = 0; i < res.size(); i++)
+		{
+			ISFSObject obj = res.getSFSObject(i);
+			boolean isEmpty = obj.getBool("is_empty");
+			if(isEmpty)
+				emptyRoomArray.addSFSObject(obj);
+			else
+				noEmptyRoomArray.addSFSObject(obj);
+		}
+		res = new SFSArray();
+		for(int i = 0; i < noEmptyRoomArray.size(); i++)
+		{
+			res.addSFSObject(noEmptyRoomArray.getSFSObject(i));
+		}
+		for(int i = 0; i < emptyRoomArray.size(); i++)
+		{
+			res.addSFSObject(emptyRoomArray.getSFSObject(i));
+		}
+		
 		ISFSObject response = new SFSObject();	
 		response.putSFSArray("array", res);
 		response.putInt("game_type", type);

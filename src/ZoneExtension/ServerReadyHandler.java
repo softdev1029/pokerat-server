@@ -15,7 +15,7 @@ public class ServerReadyHandler extends BaseServerEventHandler
 	@Override
 	public void handleServerEvent(ISFSEvent event) throws SFSException {
 		ZoneExtension gameExt = (ZoneExtension) getParentExtension();
-		// gameExt.CreateTexasDefaultRooms();
+		gameExt.createTexasDefaultRooms();
 		List<Room> roomList = gameExt.getParentZone().getRoomList();
 		trace(ExtensionLogLevel.WARN, "roomList count =  " + roomList.size());
 
