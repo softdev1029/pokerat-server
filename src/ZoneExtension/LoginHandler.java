@@ -3,9 +3,11 @@ package ZoneExtension;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 import java.util.TimeZone;
 
 import com.smartfoxserver.v2.db.IDBManager;
+import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSArray;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
@@ -44,6 +46,7 @@ public class LoginHandler extends BaseClientRequestHandler
 					sendNotificationToFriends(params.getUtfString("email"), obj.getUtfString("name"));
 					response.putBool("success", true);
 					response.putSFSObject("info", getUserInfo(params.getUtfString("email")));
+					response.putSFSObject("same_user_playing_info", getUserPlayingInfo(params.getUtfString("email"), false));
 				}
 				else if(params.getBool("guest") != null && params.getBool("guest"))
 				{
@@ -58,6 +61,7 @@ public class LoginHandler extends BaseClientRequestHandler
 					sendNotificationToFriends(params.getUtfString("email"), obj.getUtfString("name"));
 					response.putBool("success", true);
 					response.putSFSObject("info", getUserInfo(params.getUtfString("email")));
+					response.putSFSObject("same_user_playing_info", getUserPlayingInfo(params.getUtfString("email"), false));
 				}
 				else
 				{
@@ -81,6 +85,7 @@ public class LoginHandler extends BaseClientRequestHandler
 					sendNotificationToFriends(params.getUtfString("email"), obj1.getUtfString("name"));
 					response.putBool("success", true);
 					response.putSFSObject("info", getUserInfo(params.getUtfString("email")));
+					response.putSFSObject("same_user_playing_info", getUserPlayingInfo(params.getUtfString("email"), false));
 				}
 				else if(pwd.compareTo(params.getUtfString("password")) == 0) {
 					isFirstLogIn = isFirstLogin(obj);
@@ -93,6 +98,7 @@ public class LoginHandler extends BaseClientRequestHandler
 					sendNotificationToFriends(params.getUtfString("email"), res.getSFSObject(0).getUtfString("name"));
 					response.putBool("success", true);
 					response.putSFSObject("info", getUserInfo(params.getUtfString("email")));
+					response.putSFSObject("same_user_playing_info", getUserPlayingInfo(params.getUtfString("email"), false));
 				}
 				else {
 					response.putBool("success", false);
@@ -185,6 +191,32 @@ public class LoginHandler extends BaseClientRequestHandler
 		} catch (SQLException e) {
 			trace(ExtensionLogLevel.WARN, "SQL Failed: " + e.toString());
 		}
+	}
+
+	public ISFSObject getUserPlayingInfo(String email, boolean userCanLeave)
+	{
+		ISFSObject obj = new SFSObject();
+		List<Room> roomList = getParentExtension().getParentZone().getRoomList();
+		for(Room room : roomList)
+		{
+			if(!room.isGame() || room.getGroupId().compareTo("default") == 0)
+				continue;
+			ISFSObject roomInfo = (ISFSObject) room.getExtension().handleInternalMessage("get_user_room_info", email);
+			if(roomInfo != null){
+				obj.putBool("is_same_user_playing", true);
+				obj.putSFSObject("playing_info", roomInfo);
+				if(userCanLeave == false){
+					ISFSObject param = new SFSObject();
+					param.putUtfString("email", email);
+					param.putBool("can_leave", userCanLeave);					
+					room.getExtension().handleInternalMessage("set_user_can_leave", param);
+				}
+				return obj;
+			}
+		}
+		
+		obj.putBool("is_same_user_playing", false);
+		return obj;
 	}
 	
 	public ISFSObject getUserInfo(String email)

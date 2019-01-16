@@ -51,6 +51,7 @@ public class RoomExtension extends SFSExtension implements Client {
 
 	private int blindType = 0;
 	private int tableSize = 9;
+	private boolean isEmpty = false;
 	private boolean isFast = true;
 	public BigDecimal minBuyin = BigDecimal.valueOf(500);
 	public BigDecimal maxBuyin = BigDecimal.valueOf(10000);
@@ -126,7 +127,6 @@ public class RoomExtension extends SFSExtension implements Client {
 
 		tableSize = this.getParentRoom().getVariable("table_size").getIntValue();
 		blindType = this.getParentRoom().getVariable("blind_type").getIntValue();
-		boolean isEmpty = false;
 		RoomVariable emptyVal = this.getParentRoom().getVariable("empty");
 		if (emptyVal != null)
 			isEmpty = emptyVal.getBoolValue();
@@ -233,18 +233,79 @@ public class RoomExtension extends SFSExtension implements Client {
 			}
 			return 0;
 		}
+		else if(cmdName.equals("get_user_room_info")) {
+			for (Player player : table.players) {
+				if (player.playerStatus != PlayerStatus.NONE) {
+					if (player.getEmail().compareTo((String) params) == 0) {
+						ISFSObject obj = new SFSObject();
+						obj.putUtfString("name", getParentRoom().getName());
+						obj.putInt("type", 0); // TexasPoker
+						obj.putLong("blind", bigBlind.longValue());
+						obj.putLong("min_buyin", minBuyin.longValue());
+						obj.putLong("max_buyin", maxBuyin.longValue());
+						obj.putInt("size", tableSize);
+						
+						return obj;
+					}
+				}
+			}			
+			return null;
+		}
+		else if(cmdName.equals("set_user_can_leave")) {
+			ISFSObject obj = (ISFSObject) params;
+			String email = obj.getUtfString("email");
+			boolean canLeave = obj.getBool("can_leave");
+			
+			for (Player player : table.players) {
+				if (player.playerStatus != PlayerStatus.NONE) {
+					if (player.getEmail().compareTo(email) == 0) {
+						player.canLeave = canLeave;
+						return true;
+					}
+				}
+			}			
+			return false;
+		}
 
 		return null;
 	}
 
+	public void sendPlayerInputRequest(Player player){
+		Set<Action> allowedActions = table.getAllowedActions(player);
+		BigDecimal callAmount = table.minBet.subtract(player.getBet());
+		BigDecimal minBetAmount = callAmount.add(table.minBetDiff);
+		BigDecimal maxBetAmount = table.getMaxBetAmount(player);
+
+		ISFSObject resObj = new SFSObject();
+		resObj.putLong("pot", player.getBet().longValue());
+		resObj.putLong("call_amount", callAmount.longValue());
+		resObj.putLong("min_bet", minBetAmount.longValue());
+		resObj.putLong("max_bet", maxBetAmount.longValue());
+		resObj.putInt("action_size", allowedActions.size());
+		resObj.putLong("cash", player.getCash().longValue());
+		int i = 0;
+		for (Action action : allowedActions) {
+			resObj.putUtfString("action" + i, action.getName());
+			i++;
+		}
+		if(!player.isAllIn())
+			send("texas_userinput", resObj, getParentRoom().getUserByName(player.getEmail()));
+	}
+	
 	public void readyPlayer(String email, boolean isAutomatic, int sitPos) {
 		for (Player player : table.players) {
 			if (player.playerStatus != PlayerStatus.NONE) {
 				if (email.compareTo(player.getEmail()) == 0) {
+					player.canLeave = true;
 					ISFSObject obj = new SFSObject();
 					obj.putInt("pos", player.getPos());
-					if (getParentRoom().getUserByName(email) != null)
+					if (getParentRoom().getUserByName(email) != null) {
 						send("texas_ready", obj, getParentRoom().getUserByName(email));
+						
+						if(player == table.actor) {
+							sendPlayerInputRequest(player);
+						}
+					}
 				}
 			}
 		}
@@ -436,6 +497,8 @@ public class RoomExtension extends SFSExtension implements Client {
 			obj.putInt("blind", blindType);
 			obj.putInt("tableSize", tableSize);
 			obj.putBool("speed", isFast);
+			obj.putBool("isEmpty", isEmpty);
+			
 			getParentZone().getExtension().handleInternalMessage("auto_create_empty_table", obj);
 		}
 		
@@ -451,6 +514,7 @@ public class RoomExtension extends SFSExtension implements Client {
 			obj.putInt("blind", blindType);
 			obj.putInt("tableSize", tableSize);
 			obj.putBool("speed", isFast);
+			obj.putBool("isEmpty", isEmpty);
 			getParentZone().getExtension().handleInternalMessage("update_room_list", obj);
 		}
 	}
@@ -464,37 +528,46 @@ public class RoomExtension extends SFSExtension implements Client {
 		obj.putInt("blind", blindType);
 		obj.putInt("tableSize", tableSize);
 		obj.putBool("speed", isFast);
+		obj.putBool("isEmpty", isEmpty);
 
 		getParentZone().getExtension().handleInternalMessage("auto_delete_empty_table", obj);
 	}
 	
-	public void leavePlayer(String email, int status) {
+	public boolean leavePlayer(String email, int status) {
+		boolean ret = true;
 		for (Player player : table.players) {
 			if (player.playerStatus == PlayerStatus.NONE)
 				continue;
 			if (email.compareTo(player.getEmail()) == 0) {
-				if (player.isActive) {
-					if (table.actor == player) {
-						setSelectedAction(1, 0);
-					} else {
-						player.isActive = false;
-						// table.activePlayers.remove(player);
-						table.playersToAct--;
+				if(player.canLeave) {
+					if (player.isActive) {
+						if (table.actor == player) {
+							setSelectedAction(1, 0);
+						} else {
+							player.isActive = false;
+							// table.activePlayers.remove(player);
+							table.playersToAct--;
+						}
 					}
+	
+					// player.playerStatus = PlayerStatus.NONE;
+					
+					// for debug by jbj 20180904
+					whereis();
+					////////////////////////////
+					player.leave();
+					removePlayer(player, status);
+					// for debug by jbj 20180904
+					whereis();
+					////////////////////////////
 				}
-
-				// player.playerStatus = PlayerStatus.NONE;
-				
-				// for debug by jbj 20180904
-				whereis();
-				////////////////////////////
-				player.leave();
-				removePlayer(player, status);
-				// for debug by jbj 20180904
-				whereis();
-				////////////////////////////
+				else {
+					ret = false;
+				}
 			}
 		}
+		
+		return ret;
 	}
 
 	public void removePlayer(Player player, int status) {

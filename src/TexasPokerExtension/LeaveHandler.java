@@ -13,13 +13,14 @@ public class LeaveHandler extends BaseServerEventHandler
 //		System.out.println("Leave");
 		RoomExtension gameExt = (RoomExtension) getParentExtension();
 		User user = (User) event.getParameter(SFSEventParam.USER);
-		gameExt.leavePlayer(user.getName(), 0);
-		if (gameExt.getParentRoom().getUserList().size() == 0) {
-			if(gameExt.isPrivate()){
-				getApi().removeRoom(gameExt.getParentRoom());
-			}
-			else{
-				gameExt.autoDeleteEmptyRoom();
+		if(gameExt.leavePlayer(user.getName(), 0)) {
+			if (gameExt.getParentRoom().getUserList().size() == 0) {
+				if(gameExt.isPrivate()){
+					getApi().removeRoom(gameExt.getParentRoom());
+				}
+				else{
+					gameExt.autoDeleteEmptyRoom();
+				}
 			}
 		}
 	}

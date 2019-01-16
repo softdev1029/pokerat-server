@@ -372,7 +372,7 @@ public class Table {
 				continue;
 			player.resetHand();
 			// Player must be able to afford at least the big blind.
-			if (player.getCash().compareTo(BigDecimal.ZERO) > 0 && player.getAction() != Action.SIT_OUT) {
+			if (player.getCash().compareTo(BigDecimal.ZERO) > 0) {
 				player.isActive = true;
 			}
 		}
@@ -765,7 +765,7 @@ public class Table {
 	 * 
 	 * @return The allowed actions.
 	 */
-	private Set<Action> getAllowedActions(Player player) {
+	public Set<Action> getAllowedActions(Player player) {
 		Set<Action> actions = new HashSet<>();
 		if (player.isAllIn()) {
 			// actions.add(Action.CHECK);

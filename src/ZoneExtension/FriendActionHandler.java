@@ -43,16 +43,17 @@ public class FriendActionHandler extends BaseClientRequestHandler
 			}
 		}
 		else {												// Reply
+			String device_id = params.getUtfString("device_id");
 			if(action == 0)		// Accept
 			{
-				updateFriendRequest(email, friend_email, 1);
+				updateFriendRequest(email, friend_email, device_id, 1);
 //				removeFriendRequest(email, friend_email);
 				addFriend(email, friend_email);
 				addFriend(friend_email, email);
 			}
 			else					// Decline
 			{
-				updateFriendRequest(email, friend_email, 2);
+				updateFriendRequest(email, friend_email, device_id, 2);
 //				removeFriendRequest(email, friend_email);
 			}
 		}
@@ -91,10 +92,10 @@ public class FriendActionHandler extends BaseClientRequestHandler
         }
 	}
 	
-	public void updateFriendRequest(String email, String friend_email, int status)
+	public void updateFriendRequest(String email, String friend_email, String friend_device_id, int status)
 	{
 		IDBManager dbManager = getParentExtension().getParentZone().getDBManager();
-		String sql = "UPDATE friend_request SET status=" + status + ", time=" + System.currentTimeMillis() + " WHERE email=\"" + email + "\" AND friend_email=\"" + friend_email + "\" AND status=0";
+		String sql = "UPDATE friend_request SET status=" + status + ", time=" + System.currentTimeMillis() + ", friend_device_id=\"" + friend_device_id + "\" WHERE email=\"" + email + "\" AND friend_email=\"" + friend_email + "\" AND status=0";
         try {
             dbManager.executeUpdate(sql, new Object[] {});
         }

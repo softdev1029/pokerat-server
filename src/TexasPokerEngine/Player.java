@@ -60,6 +60,7 @@ public class Player implements Comparable<Player> {
 	public boolean isShow = false;
 	public boolean isWinner = false;
 	public boolean isAutoRebuy = false;
+	public boolean canLeave = true;
 
 	public int giftCategory;
 	public int giftDetail;
@@ -81,6 +82,7 @@ public class Player implements Comparable<Player> {
 	public Player() {
 		playerStatus = PlayerStatus.NONE;
 		email = "";
+		canLeave = true;
 		hand = new Hand();
 		resetHand();
 	}

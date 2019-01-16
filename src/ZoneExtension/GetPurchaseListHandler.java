@@ -23,6 +23,7 @@ public class GetPurchaseListHandler extends BaseClientRequestHandler {
 	{
 		ISFSObject obj = new SFSObject();
 		
+		String device_id = params.getUtfString("device_id");
 		long curTime = System.currentTimeMillis();
 		Date now = new Date(curTime);
 		Date today = new Date(now.getYear(), now.getMonth(), now.getDate());
@@ -32,7 +33,7 @@ public class GetPurchaseListHandler extends BaseClientRequestHandler {
 		cal.add(Calendar.DATE, -14);
 		long twoWeeksAgo = cal.getTimeInMillis();
 				
-		ISFSArray res0 = getPurchaseList(user.getName(), twoWeeksAgo, curTime);
+		ISFSArray res0 = getPurchaseList(user.getName(), device_id, twoWeeksAgo, curTime);
 		for(int i=0; i<res0.size(); i++){
 			ISFSObject obj0 = res0.getSFSObject(i);
 			if(obj0.getInt("type")== 5) { // bonus for first purchase
@@ -60,13 +61,14 @@ public class GetPurchaseListHandler extends BaseClientRequestHandler {
 		send("get_purchase_list", obj, user);
 	}
 	
-	public ISFSArray getPurchaseList(String email, long begin, long end)
+	public ISFSArray getPurchaseList(String email, String device_id, long begin, long end)
 	{
 		IDBManager dbManager = getParentExtension().getParentZone().getDBManager();
 
 		String sql = "SELECT id, type, value, status, created_at AS time FROM store_buy WHERE (type=0 OR type=1 OR (type=5 AND status>0))";
 			
 		sql += 	" AND email=\"" + email + "\""
+				+ " AND device_id=\"" + device_id + "\""
 				+ " AND (created_at>" + begin + " OR created_at=" + begin + ")"
 				+ " AND created_at<" + end
 				+ " ORDER BY created_at DESC";

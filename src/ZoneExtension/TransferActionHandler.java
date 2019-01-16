@@ -21,7 +21,7 @@ public class TransferActionHandler extends BaseClientRequestHandler
 	{
 		List<User> userList = new ArrayList<>();	
 		ISFSArray array = params.getSFSArray("array");
-		
+		String device_id = params.getUtfString("device_id");
 		if(array != null) {
 			boolean bFirst = true;
 			String strWhere = "";
@@ -50,7 +50,7 @@ public class TransferActionHandler extends BaseClientRequestHandler
 			if(strWhere != "") {
 				strWhere += ")";
 				
-				updateTransferRecord(strWhere, 1);
+				updateTransferRecord(strWhere, device_id, 1);
 				
 				if(!userList.isEmpty()) {
 					ISFSObject obj = new SFSObject();
@@ -76,10 +76,10 @@ public class TransferActionHandler extends BaseClientRequestHandler
 		return null;
 	}
 		
-	public void updateTransferRecord(String strWhere, int status)
+	public void updateTransferRecord(String strWhere, String device_id, int status)
 	{
 		IDBManager dbManager = getParentExtension().getParentZone().getDBManager();
-		String sql = "UPDATE transfer_gift SET status=" + status + " WHERE " + strWhere;
+		String sql = "UPDATE transfer_gift SET status=" + status + ", to_device_id=\"" + device_id + "\" WHERE " + strWhere;
         try {
             dbManager.executeUpdate(sql, new Object[] {});
         }

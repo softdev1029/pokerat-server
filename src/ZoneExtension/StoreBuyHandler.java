@@ -22,11 +22,12 @@ public class StoreBuyHandler extends BaseClientRequestHandler
 	public void handleClientRequest(User user, ISFSObject params)
 	{
 		String email = user.getName();
+		String device_id = params.getUtfString("device_id");
 		int type = params.getInt("type");
 		double price = params.getDouble("price");
 		long value = params.getLong("value");
 		
-		if(insertStoreBuy(email, type, price, value)) {
+		if(insertStoreBuy(email, device_id, type, price, value)) {
 			updateUserInfo(email, type, price, value);
 			
 			// make user update his profile
@@ -40,13 +41,14 @@ public class StoreBuyHandler extends BaseClientRequestHandler
 		}
 	}
 	
-	private boolean insertStoreBuy(String email, int type, double price, long value)
+	private boolean insertStoreBuy(String email, String device_id, int type, double price, long value)
 	{
 		IDBManager dbManager = getParentExtension().getParentZone().getDBManager();
 		
-		String sql = "INSERT INTO store_buy(email, type, price, value, created_at)"
+		String sql = "INSERT INTO store_buy(email, device_id, type, price, value, created_at)"
 				+ " VALUES (\""
-				+ email + "\","
+				+ email + "\",\""
+				+ device_id + "\","
 				+ type + ","
 				+ price + ","
 				+ value + "," 

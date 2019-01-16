@@ -23,6 +23,7 @@ public class GetGiftTransferListHandler extends BaseClientRequestHandler
 	{
 		ISFSObject obj = new SFSObject();
 		int type = params.getInt("type");
+		String device_id = params.getUtfString("device_id");
 		
 		long curTime = System.currentTimeMillis();
 		Date curDate = new Date(curTime);
@@ -33,29 +34,22 @@ public class GetGiftTransferListHandler extends BaseClientRequestHandler
 		String beginDateStr = dateFormatGmt.format(beginDate);
 		String endDateStr = dateFormatGmt.format(endDate);
 			
-		ISFSArray res0 = getTransferGiftList(user.getName(), true, type, beginDateStr, endDateStr); 
-		obj.putSFSArray("array0", res0);
-		ISFSArray res1 = getTransferGiftList(user.getName(), false, type, beginDateStr, endDateStr); 
-		obj.putSFSArray("array1", res1);
+		ISFSArray res = getTransferGiftList(user.getName(), device_id, type, beginDateStr, endDateStr); 
+		obj.putSFSArray("array", res);
 		
 		send("get_gift_transfer_list", obj, user);
 	}
 	
-	public ISFSArray getTransferGiftList(String email, boolean to, int type, String beginDateStr, String endDateStr)
+	public ISFSArray getTransferGiftList(String email, String device_id, int type, String beginDateStr, String endDateStr)
 	{
 		IDBManager dbManager = getParentExtension().getParentZone().getDBManager();
 
-		String sql = "SELECT transfer_gift.id as id, type, value, status, time, user.email as email, user.name as name FROM transfer_gift INNER JOIN user ON";
-		
-		if(to)
-			sql += " transfer_gift.from_email=user.email WHERE transfer_gift.to_email=\"" + email + "\"";
-		else
-			sql += " transfer_gift.to_email=user.email WHERE transfer_gift.from_email=\"" + email + "\"";
-		
-		sql += " AND transfer_gift.type=\"" + type
-				+ "\" AND (time>\"" + beginDateStr + "\" OR time=\"" + beginDateStr
-				+ "\") AND time<\"" + endDateStr
-				+ "\" ORDER BY transfer_gift.time ASC";
+		String sql = "SELECT transfer_gift.id as id, type, value, status, time, user.email as email, user.name as name FROM transfer_gift INNER JOIN user ON transfer_gift.from_email=user.email"
+					+ " WHERE transfer_gift.to_email=\"" + email + "\""
+					+ " AND (transfer_gift.to_device_id=\"" + device_id + "\" OR (transfer_gift.status=0 AND (transfer_gift.to_device_id IS NULL OR transfer_gift.to_device_id='')))"
+					+ " AND transfer_gift.type=" + type 
+					+ " AND (time>\"" + beginDateStr + "\" OR time=\"" + beginDateStr + "\") AND time<\"" + endDateStr + "\""
+					+ " ORDER BY transfer_gift.time ASC";
 		try {
 			ISFSArray res = dbManager.executeQuery(sql, new Object[] {});
 			return res;
