@@ -100,6 +100,7 @@ public class ZoneExtension extends SFSExtension {
 		addRequestHandler("purchase_action", PurchaseActionHandler.class);
 		
 		addEventHandler(SFSEventType.SERVER_READY, ServerReadyHandler.class);
+		
 	}
 	
 	public void createTexasDefaultRooms()
@@ -285,6 +286,9 @@ public class ZoneExtension extends SFSExtension {
 				long tableSize2 = o2.getInt("size");
 				long playerNum1 = o1.getInt("player_num");
 				long playerNum2 = o2.getInt("player_num");
+				long botPlayerNum1 = o1.getInt("bot_player_num");
+				long botPlayerNum2 = o2.getInt("bot_player_num");
+				
 				
 				if(empty1 != empty2)
 				{
@@ -307,7 +311,12 @@ public class ZoneExtension extends SFSExtension {
 							return -1;
 						else
 						{
-							return 0;
+							if(botPlayerNum1 < botPlayerNum2)
+								return 1;
+							else if(botPlayerNum1 > botPlayerNum2)
+								return -1;
+							else
+								return 0;
 						}
 					}
 				}
@@ -375,7 +384,10 @@ public class ZoneExtension extends SFSExtension {
 				obj.putUtfString("room_name", room.getGroupId());
 				if(room.getGroupId() == "TexasPoker" || room.getGroupId() == "Roulette")
 				{
-					long balance = (long)room.getExtension().handleInternalMessage("get_user_balance", obj.getUtfString("email"));
+					ISFSObject result = (ISFSObject) room.getExtension().handleInternalMessage("get_user_balance", obj.getUtfString("email"));
+					long balance = 0;
+					if(result != null)
+						balance = result.getLong("user_balance");
 					obj.putLong("chip", obj.getLong("chip") + balance);
 				}
 			}

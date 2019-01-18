@@ -198,6 +198,7 @@ public class RoomExtension extends SFSExtension implements Client {
 			obj.putLong("pot", table.getTotalChip().longValue());
 			obj.putInt("size", tableSize);
 			obj.putInt("player_num", table.playerSize());
+			obj.putInt("bot_player_num", table.botPlayerSize());
 			obj.putBool("speed", isFast);
 			boolean isEmpty = true;
 			ISFSArray playerList = new SFSArray();
@@ -227,11 +228,13 @@ public class RoomExtension extends SFSExtension implements Client {
 			for (Player player : table.players) {
 				if (player.playerStatus != PlayerStatus.NONE) {
 					if (player.getEmail().compareTo((String) params) == 0) {
-						return player.getCash().longValue();
+						ISFSObject obj = new SFSObject();
+						obj.putLong("user_balance", player.getCash().longValue());
+						return obj;
 					}
 				}
 			}
-			return 0;
+			return null;
 		}
 		else if(cmdName.equals("get_user_room_info")) {
 			for (Player player : table.players) {
@@ -626,7 +629,7 @@ public class RoomExtension extends SFSExtension implements Client {
 		showBestCards();
 		if (table.isRunning()) {
 			setBlind();
-			selectActor(table.actor, table.isSelect);
+			selectActor(table.actor, table.isSelect, true);
 		}
 	}
 
@@ -764,7 +767,7 @@ public class RoomExtension extends SFSExtension implements Client {
 		setActorInTurn(playerToNotify, actorPos, true);
 	}
 
-	public void selectActor(Player actor, boolean show) {
+	public void selectActor(Player actor, boolean show, boolean isJoinPlayer) {
 		if(actor == null)
 			return;
 		actorPos = actor.getPos();
@@ -775,6 +778,7 @@ public class RoomExtension extends SFSExtension implements Client {
 		else
 			resObj.putBool("show", false);
 		resObj.putInt("time", actor.isBot() ? BOT_WAITING_TIME : ((isFast) ? 10 : 20));
+		resObj.putBool("isJoinPlayer", isJoinPlayer);
 		if (getParentRoom().getUserList().size() > 0)
 			send("texas_setactor", resObj, getParentRoom().getUserList());
 	}
@@ -1428,14 +1432,13 @@ public class RoomExtension extends SFSExtension implements Client {
 		int detail = params.getInt("detail");
 		long amount = params.getLong("amount");
 		boolean isCoin = params.getBool("coin");
-
+		long chip = getPlayerChipcount(email);
+		long coin = getPlayerCoin(email);
 		if (isCoin)
 			payPlayerCoin(email, amount);
 		else
 			payPlayerChipcount(email, amount);
 		boolean isMoney = false;
-		long chip = getPlayerChipcount(email);
-		long coin = getPlayerCoin(email);
 		for (Player player : table.players) {
 			if (player.playerStatus == PlayerStatus.NONE)
 				continue;

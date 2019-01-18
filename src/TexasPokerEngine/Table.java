@@ -116,6 +116,15 @@ public class Table {
 		return count;
 	}
 
+	public int botPlayerSize() {
+		int count = 0;
+		for (Player player : players) {
+			if (player.playerStatus != PlayerStatus.NONE && player.isBot())
+				count++;
+		}
+		return count;
+	}
+
 	public BigDecimal getTotalChip() {
 		BigDecimal chip = BigDecimal.valueOf(0);
 		for (Player player : players) {
@@ -430,7 +439,7 @@ public class Table {
 		//for log trace
 	 	LogOutput.traceLog("[selectActor] begins");
 		isSelect = show;
-		gameExt.selectActor(actor, show);
+		gameExt.selectActor(actor, show, false);
 		//for log trace
 	 	LogOutput.traceLog("[selectActor] ends");
 	}
