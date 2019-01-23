@@ -176,7 +176,7 @@ public class Table {
 				if (player.getCash().longValue() == 0) {
 					//for log trace
 				 	LogOutput.traceLog("case : player.getCash().longValue() is 0");
-					if (player.isAutoRebuy) {
+					if (player.isAutoRebuy && gameExt.canAutoRebuy(player)) {
 						//for log trace
 					 	LogOutput.traceLog("case : player.isAutoRebuy is true");
 						gameExt.sendNewChip(player);

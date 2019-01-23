@@ -29,23 +29,31 @@ public class CreatePrivateRoomHandler extends BaseClientRequestHandler
 		boolean speed = params.getBool("speed");
 		
 		SFSZone zone = (SFSZone) ((ZoneExtension)getParentExtension()).getParentZone();
-		Room room = zone.getRoomByName(tableName);
-		if(room != null && room.isDynamic())
-			getApi().removeRoom(room);
-
-		room = ((ZoneExtension)getParentExtension()).CreateRoom(blind, seat, speed, true, "TexasPoker", DynamicRoomType.RT_PRIVATE, tableName);
-
-		ISFSObject response = new SFSObject();
-		if(room != null){
-			response.putBool("success", true);
-			response.putUtfString("table_name", tableName);
-			response.putInt("size", seat);
-			send("create_private_table", response, user);
-			
-		} else
+		ZoneExtension.mutex.lock();
+		try
 		{
-			response.putBool("success", false);
-			send("create_private_table", response, user);
+			Room room = zone.getRoomByName(tableName);
+			if(room != null && room.isDynamic())
+				getApi().removeRoom(room);
+	
+			room = ((ZoneExtension)getParentExtension()).CreateRoom(blind, seat, speed, true, "TexasPoker", DynamicRoomType.RT_PRIVATE, tableName);
+	
+			ISFSObject response = new SFSObject();
+			if(room != null){
+				response.putBool("success", true);
+				response.putUtfString("table_name", tableName);
+				response.putInt("size", seat);
+				send("create_private_table", response, user);
+				
+			} else
+			{
+				response.putBool("success", false);
+				send("create_private_table", response, user);
+			}
+		}
+		finally
+		{
+			ZoneExtension.mutex.unlock();
 		}
 	}
 }

@@ -118,16 +118,25 @@ public class GetFriendRoomHandler extends BaseClientRequestHandler
 	
 	private int GetUserGameType(String email)
 	{
-		List<Room> roomList = getParentExtension().getParentZone().getRoomList();
-		for(Room room : roomList) {
-			if(!room.isGame() || room.getGroupId().compareTo("default") == 0)
-				continue;
-			ISFSObject obj = (ISFSObject) room.getExtension().handleInternalMessage("get_room_info", null);
-			if(obj == null)
-				continue;		
-			ISFSArray playerList = obj.getSFSArray("player_list");
-			if(IsEmailExist(email, playerList))
-				return obj.getInt("type");
+		ZoneExtension.mutex.lock();
+		try
+		{
+			List<Room> roomList = getParentExtension().getParentZone().getRoomList();
+			for(Room room : roomList) {
+				if(!room.isGame() || room.getGroupId().compareTo("default") == 0)
+					continue;
+				ISFSObject obj = (ISFSObject) room.getExtension().handleInternalMessage("get_room_info", null);
+				if(obj == null)
+					continue;		
+				ISFSArray playerList = obj.getSFSArray("player_list");
+				if(IsEmailExist(email, playerList)){
+					return obj.getInt("type");
+				}
+			}
+		}
+		finally
+		{
+			ZoneExtension.mutex.unlock();
 		}
 		
 		return -1;
@@ -136,26 +145,34 @@ public class GetFriendRoomHandler extends BaseClientRequestHandler
 	private List<ISFSObject> GetFriendRoomArray(int gameType, ISFSArray friendArray)
 	{
 		List<ISFSObject> roomArray = new ArrayList<>();		
-		List<Room> roomList = getParentExtension().getParentZone().getRoomList();
-		for(Room room : roomList) {
-			if(!room.isGame() || room.getGroupId().compareTo("default") == 0)
-				continue;
-			ISFSObject obj = (ISFSObject) room.getExtension().handleInternalMessage("get_room_info", null);
-			if(obj == null)
-				continue;
-			if(obj.getInt("type") != gameType)
-				continue;
-			ISFSArray playerList = obj.getSFSArray("player_list");
-			for(int i = 0; i < playerList.size(); i ++) {
-				ISFSObject player = playerList.getSFSObject(i);
-				String playerEmail = player.getUtfString("email");
-				if(IsEmailExist(playerEmail, friendArray)){
-					roomArray.add(obj);
-					break;
+		ZoneExtension.mutex.lock();
+		try
+		{
+			List<Room> roomList = getParentExtension().getParentZone().getRoomList();
+			for(Room room : roomList) {
+				if(!room.isGame() || room.getGroupId().compareTo("default") == 0)
+					continue;
+				ISFSObject obj = (ISFSObject) room.getExtension().handleInternalMessage("get_room_info", null);
+				if(obj == null)
+					continue;
+				if(obj.getInt("type") != gameType)
+					continue;
+				ISFSArray playerList = obj.getSFSArray("player_list");
+				for(int i = 0; i < playerList.size(); i ++) {
+					ISFSObject player = playerList.getSFSObject(i);
+					String playerEmail = player.getUtfString("email");
+					if(IsEmailExist(playerEmail, friendArray)){
+						roomArray.add(obj);
+						break;
+					}
 				}
 			}
 		}
-		
+		finally
+		{
+			ZoneExtension.mutex.unlock();
+		}
+
 		return roomArray;
 	}
 	

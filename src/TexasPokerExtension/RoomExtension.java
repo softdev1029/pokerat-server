@@ -1733,5 +1733,12 @@ public class RoomExtension extends SFSExtension implements Client {
 		return dynamicRoomType == DynamicRoomType.RT_DEFAULT;
 
 	}
+	
+	public boolean canAutoRebuy(Player player)
+	{
+		long amount = getPlayerChipcount(player.getEmail());
+		long minBuyin = TEXAS_INFO[blindType].minBuyin;
+		return amount >= minBuyin;
+	}
 
 }

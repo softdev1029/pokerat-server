@@ -196,24 +196,33 @@ public class LoginHandler extends BaseClientRequestHandler
 	public ISFSObject getUserPlayingInfo(String email, boolean userCanLeave)
 	{
 		ISFSObject obj = new SFSObject();
-		List<Room> roomList = getParentExtension().getParentZone().getRoomList();
-		for(Room room : roomList)
+		ZoneExtension.mutex.lock();
+		try
 		{
-			if(!room.isGame() || room.getGroupId().compareTo("default") == 0)
-				continue;
-			ISFSObject roomInfo = (ISFSObject) room.getExtension().handleInternalMessage("get_user_room_info", email);
-			if(roomInfo != null){
-				obj.putBool("is_same_user_playing", true);
-				obj.putSFSObject("playing_info", roomInfo);
-				if(userCanLeave == false){
-					ISFSObject param = new SFSObject();
-					param.putUtfString("email", email);
-					param.putBool("can_leave", userCanLeave);					
-					room.getExtension().handleInternalMessage("set_user_can_leave", param);
+			List<Room> roomList = getParentExtension().getParentZone().getRoomList();
+			for(Room room : roomList)
+			{
+				if(!room.isGame() || room.getGroupId().compareTo("default") == 0)
+					continue;
+				ISFSObject roomInfo = (ISFSObject) room.getExtension().handleInternalMessage("get_user_room_info", email);
+				if(roomInfo != null){
+					obj.putBool("is_same_user_playing", true);
+					obj.putSFSObject("playing_info", roomInfo);
+					if(userCanLeave == false){
+						ISFSObject param = new SFSObject();
+						param.putUtfString("email", email);
+						param.putBool("can_leave", userCanLeave);					
+						room.getExtension().handleInternalMessage("set_user_can_leave", param);
+					}
+					return obj;
 				}
-				return obj;
-			}
+			}			
 		}
+		finally
+		{
+			ZoneExtension.mutex.unlock();
+		}
+
 		
 		obj.putBool("is_same_user_playing", false);
 		return obj;
