@@ -1,16 +1,27 @@
 package RouletteExtension;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
 
+import com.smartfoxserver.v2.api.CreateRoomSettings;
+import com.smartfoxserver.v2.api.CreateRoomSettings.RoomExtensionSettings;
 import com.smartfoxserver.v2.core.SFSEventType;
 import com.smartfoxserver.v2.db.IDBManager;
+import com.smartfoxserver.v2.entities.Room;
+import com.smartfoxserver.v2.entities.SFSRoomRemoveMode;
+import com.smartfoxserver.v2.entities.User;
+import com.smartfoxserver.v2.entities.Zone;
 import com.smartfoxserver.v2.entities.data.ISFSArray;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSArray;
 import com.smartfoxserver.v2.entities.data.SFSObject;
+import com.smartfoxserver.v2.entities.variables.RoomVariable;
+import com.smartfoxserver.v2.entities.variables.SFSRoomVariable;
+import com.smartfoxserver.v2.exceptions.SFSCreateRoomException;
 import com.smartfoxserver.v2.extensions.ExtensionLogLevel;
 import com.smartfoxserver.v2.extensions.SFSExtension;
 
@@ -20,8 +31,14 @@ import RouletteEngine.Player;
 import RouletteEngine.Status;
 import RouletteEngine.Table;
 
+import com.smartfoxserver.v2.extensions.BaseSFSExtension;
+
+import ZoneExtension.ZoneExtension;
+import ZoneExtension.ZoneExtension.DynamicRoomType;
+
 public class RoomExtension extends SFSExtension {
 
+	public int blindType = 0;
 	public int tableSize = 4;
 	public long minBuyin, maxBuyin;
 	public long minBet, maxBet;
@@ -31,7 +48,8 @@ public class RoomExtension extends SFSExtension {
 	public ISFSArray actionArray = new SFSArray();
 	public boolean isAction = false;
 
-	private static long[] MIN_BET = {1, 5, 10, 25, 50};
+	public static int minEmptyRoomCount = 2;
+	public static long[] MIN_BET = {1, 5, 10, 25, 50};
 	private static long[] MAX_BET = {50, 200, 500, 1000, 2000};
 	private static long[] MIN_BUYIN = {50, 15000, 25000, 50000, 150000};
 	private static long[] MAX_BUYIN = {30000, 90000, 100000, 175000, 450000};
@@ -50,10 +68,12 @@ public class RoomExtension extends SFSExtension {
 
 		tableSize = 4;
 
-		Random rd = new Random();
-		int index = rd.nextInt(2);
-		minBuyin = MIN_BUYIN[index];	maxBuyin = MAX_BUYIN[index];
-		minBet = MIN_BET[index];		maxBet = MAX_BET[index];
+		RoomVariable v = getParentRoom().getVariable("blind_type");
+		if(v != null)
+			blindType = v.getIntValue();
+
+		minBuyin = MIN_BUYIN[blindType];	maxBuyin = MAX_BUYIN[blindType];
+		minBet = MIN_BET[blindType];		maxBet = MAX_BET[blindType];
 
 		table = new Table(this);
 	}
@@ -141,7 +161,13 @@ public class RoomExtension extends SFSExtension {
 		if(table.isRunning)
 			updateStatus(false);
 		else
-			table.run();
+		{
+			new Thread(new Runnable() {
+			     public void run() {
+					table.run();
+			     }
+			}).start();
+		}
 	}
 
 	public void leavePlayer(String email)
@@ -668,5 +694,267 @@ public class RoomExtension extends SFSExtension {
 			trace(ExtensionLogLevel.WARN, "SQL Failed: " + e.toString());
 		}
 	}
+	
+	public void autoCreateRouletteRooms()
+	{
+		autoCreateRouletteRooms(getParentZone(), blindType);
+	}
 
+	public void autoDeleteEmptyRoom()
+	{
+		autoDeleteRouletteRooms(getParentZone(), blindType);
+	}
+
+	
+	public static Room CreateRouletteRoom( Zone zone, int blindType, boolean speed, boolean isEmpty, DynamicRoomType dynamicRoomType, String roomName)
+	{
+		String groupName = "Roulette";
+		String tableName = roomName != null ? roomName : ZoneExtension.GetNewRoomName(zone, blindType, 4, isEmpty, groupName); 
+		
+		
+		CreateRoomSettings settings = new CreateRoomSettings();
+		settings.setGame(true);
+		settings.setName(tableName);
+		settings.setGroupId(groupName);
+		settings.setDynamic(true);
+		settings.setMaxUsers(20);
+		List<RoomVariable> roomVariables = new ArrayList<RoomVariable>();
+		SFSRoomVariable rv = new SFSRoomVariable("table_size", 4);
+		roomVariables.add(rv);
+		rv = new SFSRoomVariable("blind_type", blindType);
+		roomVariables.add(rv);
+		rv = new SFSRoomVariable("speed", speed);
+		roomVariables.add(rv);
+		String tableType = dynamicRoomType.toString();
+		rv = new SFSRoomVariable("dynamic_table_type", tableType);
+		roomVariables.add(rv);
+		rv = new SFSRoomVariable("empty", isEmpty);
+		roomVariables.add(rv);		
+		settings.setRoomVariables(roomVariables);
+		settings.setAutoRemoveMode(SFSRoomRemoveMode.NEVER_REMOVE);
+		
+		RoomExtensionSettings extension = null;
+		extension = new RoomExtensionSettings("Pokerat", "RouletteExtension.RoomExtension");
+		settings.setExtension(extension);
+		
+		try {
+			return ((BaseSFSExtension)zone.getExtension()).getApi().createRoom(zone, settings, null);
+		} catch (SFSCreateRoomException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return null;
+		}
+	}	
+	
+	public static void createRouletteDefaultRooms(Zone zone)
+	{
+		int blindTypeCount = MIN_BET.length;
+		int[] roomCounts = new int[blindTypeCount];
+		ZoneExtension.mutex.lock();
+		try
+		{
+			List<Room> roomList = zone.getRoomList();
+			for(Room room : roomList) {
+				
+				if(!room.isGame() || room.getGroupId().compareTo("Roulette") != 0)
+					continue;
+				RoomVariable v;
+				int blindType = 0;
+				v = room.getVariable("blind_type");
+				if(v != null)
+					blindType = v.getIntValue();
+				
+				if(blindType < blindTypeCount)
+					roomCounts[blindType]++;
+			}
+			for(int i = 0; i < blindTypeCount; i++)
+			{
+				while(roomCounts[i] < minEmptyRoomCount)
+				{
+					CreateRouletteRoom(zone, i, true, true, DynamicRoomType.RT_DEFAULT, null);
+					roomCounts[i]++;
+				}
+			}			
+		}
+		finally
+		{
+			ZoneExtension.mutex.unlock();
+		}
+
+	}
+	
+	public static void updateRoomList(Zone zone, long blind, User user)
+	{
+		ZoneExtension.mutex.lock();
+		try
+		{
+			ISFSArray res = getRouletteRoomList(zone, blind);
+			
+			ISFSObject response = new SFSObject();	
+			response.putSFSArray("array", res);
+			response.putInt("game_type", 2);
+			response.putLong("blind", blind);
+			if(user != null)
+				zone.getExtension().send("get_room_list", response, user);
+			else
+			{
+				List<User> userList = new ArrayList<User>();
+				userList.addAll(zone.getUserList());
+				zone.getExtension().send("update_room_list", response, userList);
+			}			
+		}
+		finally
+		{
+			ZoneExtension.mutex.unlock();
+		}
+	}	
+	public static ISFSArray getRouletteRoomList(Zone zone, long blind)
+	{
+		ISFSArray res = new SFSArray();
+		List<Room> roomList = zone.getRoomList();
+		List<ISFSObject> tempList = new ArrayList<ISFSObject>();
+		for(Room room : roomList)
+		{
+			if(!room.isGame() || room.getGroupId().compareTo("Roulette") != 0)
+				continue;
+			ISFSObject obj = (ISFSObject) room.getExtension().handleInternalMessage("get_room_info", null);
+			if(obj != null)
+			{
+				obj.putBool("is_empty", room.getUserList().size() == 0);
+				if(blind == obj.getLong("min_bet"))
+					tempList.add(obj);
+			}
+		}
+		
+		// sort room list by min_buyin and is_empty
+		tempList.sort(new Comparator<ISFSObject>() {
+			@Override
+			public int compare(ISFSObject o1, ISFSObject o2) {
+				boolean empty1 = o1.getBool("is_empty");
+				boolean empty2 = o2.getBool("is_empty");
+				long min1 = o1.getLong("min_bet");
+				long min2 = o2.getLong("min_bet");
+				
+				if(empty1 != empty2)
+				{
+					if(empty1 == true)
+						return 1;
+					else
+						return -1;
+				}
+				else
+				{
+					if(min1 > min2)
+						return 1;
+					else if(min1 < min2)
+						return -1;
+					else
+					{
+						return 0;
+					}
+				}
+			}
+		});
+		
+		res = new SFSArray();
+		for(int i = 0; i < tempList.size(); i++)
+		{
+			res.addSFSObject(tempList.get(i));
+		}
+		return res;
+	}
+	
+	private static List<Room> getEmptyRouletteRoomList(Zone zone, int blindType)
+	{
+		List<Room> roomList = zone.getRoomList();
+		List<Room> emptyRoomList = new ArrayList<Room>();
+		
+		for(Room room : roomList) {
+			if(!room.isGame() || room.getGroupId().compareTo("Roulette") != 0)
+				continue;
+			
+			int userCount = room.getUserList().size();
+			int curBlindType = 0;
+			RoomVariable v = room.getVariable("blind_type");
+			if(v != null)
+				curBlindType = v.getIntValue();
+			
+			if(blindType != curBlindType)
+				continue;
+			if(userCount == 0)
+				emptyRoomList.add(room);
+		}
+		return emptyRoomList;
+	}
+	
+	public static void autoCreateRouletteRooms(Zone zone, int blindType)
+	{
+		ZoneExtension.mutex.lock();
+		try
+		{
+			List<Room> createdRoomList = new ArrayList<Room>();
+			List<Room> emptyRoomList = getEmptyRouletteRoomList(zone, blindType);
+			int emptyRoomCount = emptyRoomList.size();
+			while(emptyRoomCount < minEmptyRoomCount)
+			{
+				Room room = CreateRouletteRoom(zone, blindType, true, true, DynamicRoomType.RT_AUTO_CREATE, null);
+				if(room != null)
+					createdRoomList.add(room);
+				emptyRoomCount++;
+			}
+			if(emptyRoomList.size() < minEmptyRoomCount)
+			{
+				long blind = getBlind(blindType);
+				updateRoomList(zone, blind, null);
+			}
+		}
+		finally
+		{
+			ZoneExtension.mutex.unlock();
+		}
+	}
+
+	public static void autoDeleteRouletteRooms(Zone zone, int blindType)
+	{
+		ZoneExtension.mutex.lock();
+		try
+		{
+			ISFSArray res = new SFSArray();
+			List<Room> deletedRoomList = new ArrayList<Room>();
+			List<Room> emptyRoomList = getEmptyRouletteRoomList(zone, blindType);
+			for(int i = emptyRoomList.size() - 1; i >= minEmptyRoomCount  ; i--)
+			{
+				if(!emptyRoomList.get(i).isDynamic())
+					continue;
+				((BaseSFSExtension)zone.getExtension()).getApi().removeRoom(emptyRoomList.get(i));
+				deletedRoomList.add(emptyRoomList.get(i));
+				ISFSObject obj = new SFSObject();
+				obj.putInt("table_pos", i);
+				res.addSFSObject(obj);
+			}
+			if(deletedRoomList.size() > 0)
+			{
+				long blind = getBlind(blindType);
+				updateRoomList(zone, blind, null);
+				ISFSObject response = new SFSObject();
+				List<User> userList = new ArrayList<User>();
+				userList.addAll(zone.getUserList());
+				zone.getExtension().send("update_friend_room", response, userList);
+			}
+		}
+		finally
+		{
+			ZoneExtension.mutex.unlock();
+		}
+	}
+
+	private static long getBlind(int blindType)
+	{
+		if(blindType < MIN_BET.length)
+			return MIN_BET[blindType];
+		else 
+			return MIN_BET[0];
+	}
+
+	
 }

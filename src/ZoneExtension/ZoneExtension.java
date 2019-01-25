@@ -10,7 +10,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import TexasPokerEngine.Player;
 import TexasPokerEngine.PlayerStatus;
 import TexasPokerExtension.LeaveHandler;
-import TexasPokerExtension.RoomExtension;
 
 import com.smartfoxserver.v2.api.CreateRoomSettings;
 import com.smartfoxserver.v2.api.CreateRoomSettings.RoomExtensionSettings;
@@ -21,6 +20,7 @@ import com.smartfoxserver.v2.entities.SFSRoom;
 import com.smartfoxserver.v2.entities.SFSRoomRemoveMode;
 import com.smartfoxserver.v2.entities.SFSZone;
 import com.smartfoxserver.v2.entities.User;
+import com.smartfoxserver.v2.entities.Zone;
 import com.smartfoxserver.v2.entities.data.ISFSArray;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSArray;
@@ -105,310 +105,11 @@ public class ZoneExtension extends SFSExtension {
 		
 	}
 	
-	public void createTexasDefaultRooms()
-	{
-		int blindTypeCount = RoomExtension.TEXAS_INFO.length;
-		int seatTypeCount = 2;
-		int[][] roomCounts = new int[blindTypeCount][seatTypeCount];
-		mutex.lock();
-		try
-		{
-			List<Room> roomList = getParentZone().getRoomList();
-			for(Room room : roomList) {
-				
-				int tableSize = 9;
-				RoomVariable v = room.getVariable("table_size");
-				if(v == null)
-					continue;
-				tableSize = v.getIntValue();
-				int blindType = 0;
-				v = room.getVariable("blind_type");
-				if(v == null)
-					continue;
-				blindType = v.getIntValue();
-				int seatIndex = tableSize == 5 ? 0 : 1;
-				if(blindType < blindTypeCount)
-					roomCounts[blindType][seatIndex]++;
-			}
-			for(int i = 0; i < blindTypeCount; i++)
-			{
-				for(int j = 0; j < seatTypeCount; j++)
-				{
-					int seat = j == 0 ? 5 : 9;
-					boolean isFast = true;
-					while(roomCounts[i][j] < 2)
-					{
-						boolean isEmpty = (roomCounts[i][j] % 2) != 0;
-						CreateRoom(i, seat, isFast, isEmpty, "TexasPoker", DynamicRoomType.RT_DEFAULT, null);
-						roomCounts[i][j]++;
-					}
-				}
-			}			
-		}
-		finally
-		{
-			mutex.unlock();
-		}
-
-	}
-	
-	private List<Room> getEmptyRoomList(int blindType, int seat, boolean speed, boolean isEmpty, String groupName)
-	{
-		List<Room> roomList = getParentZone().getRoomList();
-		List<Room> emptyRoomList = new ArrayList<Room>();
-		
-		for(Room room : roomList) {
-			if(!room.isGame() || room.getGroupId().compareTo("default") == 0)
-				continue;
-			
-			int userCount = room.getUserList().size();
-			int tableSize = 9;
-			RoomVariable v = room.getVariable("table_size");
-			if(v == null)
-				continue;
-			tableSize = v.getIntValue();
-			if(tableSize != seat)
-				continue;
-			int curBlindType = 0;
-			v = room.getVariable("blind_type");
-			if(v == null)
-				continue;
-			curBlindType = v.getIntValue();
-			if(blindType != curBlindType)
-				continue;
-			boolean curIsEmpty = false;
-			v = room.getVariable("empty");
-			if(v != null)
-				curIsEmpty = v.getBoolValue();
-			if(curIsEmpty != isEmpty)
-				continue;
-			if(!room.getGroupId().equals(groupName))
-				continue;
-			if(userCount == 0)
-				emptyRoomList.add(room);
-		}
-		return emptyRoomList;
-	}
-	
-	public void autoCreateRooms(int blindType, int seat, boolean speed, boolean isEmpty, String groupName)
-	{
-		mutex.lock();
-		try
-		{
-			List<Room> createdRoomList = new ArrayList<Room>();
-			List<Room> emptyRoomList = getEmptyRoomList(blindType, seat, speed, isEmpty, groupName);
-			int emptyRoomCount = emptyRoomList.size();
-			while(emptyRoomCount < 1)
-			{
-				Room room = CreateRoom(blindType, seat, speed, isEmpty, groupName, DynamicRoomType.RT_AUTO_CREATE, null);
-				if(room != null)
-					createdRoomList.add(room);
-				emptyRoomCount++;
-			}
-			if(emptyRoomList.size() < 1)
-			{
-				if(groupName.equals("TexasPoker"))
-				{
-					long blind = RoomExtension.getBlind(blindType);
-					updateRoomList(0, blind, null);
-				}
-			}
-		}
-		finally
-		{
-			mutex.unlock();
-		}
-	}
-
-	public void autoDeleteRooms(int blindType, int seat, boolean speed, boolean isEmpty, String groupName)
-	{
-		mutex.lock();
-		try
-		{
-			ISFSArray res = new SFSArray();
-			List<Room> deletedRoomList = new ArrayList<Room>();
-			List<Room> emptyRoomList = getEmptyRoomList(blindType, seat, speed, isEmpty, groupName);
-			for(int i = emptyRoomList.size() - 1; i >= 1  ; i--)
-			{
-				if(!emptyRoomList.get(i).isDynamic())
-					continue;
-				getApi().removeRoom(emptyRoomList.get(i));
-				deletedRoomList.add(emptyRoomList.get(i));
-				ISFSObject obj = new SFSObject();
-				obj.putInt("table_pos", i);
-				res.addSFSObject(obj);
-			}
-			if(deletedRoomList.size() > 0)
-			{
-				if(groupName.equals("TexasPoker"))
-				{
-					long blind = RoomExtension.getBlind(blindType);
-					// removeRoomList(0, blind, res);
-					updateRoomList(0, blind, null);
-					ISFSObject response = new SFSObject();
-					List<User> userList = new ArrayList<User>();
-					userList.addAll(getParentZone().getUserList());
-					send("update_friend_room", response, userList);
-				}
-			}
-		}
-		finally
-		{
-			mutex.unlock();
-		}
-	}
-	
-	public void updateRoomList(int type, long blind, User user)
-	{
-		mutex.lock();
-		try
-		{
-			ISFSArray res = getRoomList(type, blind);
-			
-			ISFSObject response = new SFSObject();	
-			response.putSFSArray("array", res);
-			response.putInt("game_type", type);
-			response.putLong("blind", blind);
-			if(user != null)
-				send("get_room_list", response, user);
-			else
-			{
-				List<User> userList = new ArrayList<User>();
-				userList.addAll(getParentZone().getUserList());
-				send("update_room_list", response, userList);
-			}			
-		}
-		finally
-		{
-			mutex.unlock();
-		}
-	}
-
-	public ISFSArray getRoomList(int type, long blind)
-	{
-		ISFSArray res = new SFSArray();
-		List<Room> roomList = getParentZone().getRoomList();
-		List<ISFSObject> tempList = new ArrayList<ISFSObject>();
-		for(Room room : roomList)
-		{
-			if(!room.isGame() || room.getGroupId().compareTo("default") == 0)
-				continue;
-			ISFSObject obj = (ISFSObject) room.getExtension().handleInternalMessage("get_room_info", null);
-			if(obj != null && obj.getInt("type") == type)
-			{
-				if(type == 0) {
-					if(blind >= 10000000 && obj.getLong("blind") >= 10000000)
-						tempList.add(obj);
-					else if(blind == obj.getLong("blind"))
-						tempList.add(obj);
-					
-				}
-				if(type == 2 && blind == obj.getLong("min_bet"))
-					tempList.add(obj);
-			}
-		}
-		
-		// sort room list by min_buyin and is_empty
-		tempList.sort(new Comparator<ISFSObject>() {
-			@Override
-			public int compare(ISFSObject o1, ISFSObject o2) {
-				boolean empty1 = o1.getBool("is_empty");
-				boolean empty2 = o2.getBool("is_empty");
-				long min1 = o1.getLong("min_buyin");
-				long min2 = o2.getLong("min_buyin");
-				long tableSize1 = o1.getInt("size");
-				long tableSize2 = o2.getInt("size");
-				long playerNum1 = o1.getInt("player_num");
-				long playerNum2 = o2.getInt("player_num");
-				long botPlayerNum1 = o1.getInt("bot_player_num");
-				long botPlayerNum2 = o2.getInt("bot_player_num");
-				
-				
-				if(empty1 != empty2)
-				{
-					if(empty1 == true)
-						return 1;
-					else
-						return -1;
-				}
-				else
-				{
-					if(min1 > min2)
-						return 1;
-					else if(min1 < min2)
-						return -1;
-					else
-					{
-						if(tableSize1 > tableSize2)
-							return 1;
-						else if(tableSize1 < tableSize2)
-							return -1;
-						else
-						{
-							if(botPlayerNum1 < botPlayerNum2)
-								return 1;
-							else if(botPlayerNum1 > botPlayerNum2)
-								return -1;
-							else
-								return 0;
-						}
-					}
-				}
-			}
-		});
-		
-		res = new SFSArray();
-		for(int i = 0; i < tempList.size(); i++)
-		{
-			res.addSFSObject(tempList.get(i));
-		}
-		return res;
-	}
-	
 	@Override
 	public void destroy() {
 		super.destroy();
 	}
 
-	@Override
-	public Object handleInternalMessage(String cmdName, Object params) {
-		if (cmdName.equals("auto_create_empty_table")) {
-			ISFSObject obj = (ISFSObject) params;
-			String groupName = obj.getUtfString("groupName");
-			int blindType = obj.getInt("blind");
-			int tableSize = obj.getInt("tableSize");
-			boolean isFast = obj.getBool("speed");
-			boolean isEmpty = obj.getBool("isEmpty");
-			autoCreateRooms(blindType, tableSize, isFast, isEmpty, groupName);
-		}
-		else if(cmdName.equals("auto_delete_empty_table"))
-		{
-			ISFSObject obj = (ISFSObject) params;
-			String groupName = obj.getUtfString("groupName");
-			int blindType = obj.getInt("blind");
-			int tableSize = obj.getInt("tableSize");
-			boolean isFast = obj.getBool("speed");
-			boolean isEmpty = obj.getBool("isEmpty");
-			autoDeleteRooms(blindType, tableSize, isFast, isEmpty, groupName);
-		}
-		else if(cmdName.equals("update_room_list"))
-		{
-			ISFSObject obj = (ISFSObject) params;
-			String groupName = obj.getUtfString("groupName");
-			int blindType = obj.getInt("blind");
-			if(groupName.equals("TexasPoker"))
-			{
-				long blind = RoomExtension.getBlind(blindType);
-				updateRoomList(0, blind, null);
-				ISFSObject response = new SFSObject();
-				List<User> userList = new ArrayList<User>();
-				userList.addAll(getParentZone().getUserList());
-				send("update_friend_room", response, userList);
-			}
-		}
-		return null;
-	}
-	
 	public void AddUserInfo(ISFSObject obj) {
 		User user = getParentZone().getUserByName(obj.getUtfString("email"));
 		obj.putBool("online", user != null);
@@ -460,48 +161,8 @@ public class ZoneExtension extends SFSExtension {
 		}
 	}
 	
-	public Room CreateRoom( int blindType, int seat, boolean speed, boolean isEmpty, String groupName, DynamicRoomType dynamicRoomType, String roomName)
-	{
-		String tableName = roomName != null ? roomName : GetNewRoomName(blindType, seat, isEmpty, groupName); 
-		
-		SFSZone zone = (SFSZone)getParentZone();
-		
-		CreateRoomSettings settings = new CreateRoomSettings();
-		settings.setGame(true);
-		settings.setName(tableName);
-		settings.setGroupId(groupName);
-		settings.setDynamic(true);
-		settings.setMaxUsers(20);
-		List<RoomVariable> roomVariables = new ArrayList<RoomVariable>();
-		SFSRoomVariable rv = new SFSRoomVariable("table_size", seat);
-		roomVariables.add(rv);
-		rv = new SFSRoomVariable("blind_type", blindType);
-		roomVariables.add(rv);
-		rv = new SFSRoomVariable("speed", speed);
-		roomVariables.add(rv);
-		String tableType = dynamicRoomType.toString();
-		rv = new SFSRoomVariable("dynamic_table_type", tableType);
-		roomVariables.add(rv);
-		rv = new SFSRoomVariable("empty", isEmpty);
-		roomVariables.add(rv);		
-		settings.setRoomVariables(roomVariables);
-		settings.setAutoRemoveMode(SFSRoomRemoveMode.NEVER_REMOVE);
-		
-		RoomExtensionSettings extension = null;
-		if(groupName.equals("TexasPoker"))
-			extension = new RoomExtensionSettings("Pokerat", "TexasPokerExtension.RoomExtension");
-		settings.setExtension(extension);
-		
-		try {
-			return getApi().createRoom(getParentZone(), settings, null);
-	} catch (SFSCreateRoomException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			return null;
-		}
-	}
-	
-	public String GetNewRoomName(int blind, int seat, boolean isEmpty, String groupName) {
+
+	public static String GetNewRoomName(Zone zone, int blind, int seat, boolean isEmpty, String groupName) {
 		String baseName = groupName + "_" + blind + "_" + seat + "_";
 		if(isEmpty)
 			baseName = baseName + "empty_";
@@ -509,7 +170,7 @@ public class ZoneExtension extends SFSExtension {
 		mutex.lock();
 		try
 		{
-			List<Room> roomList = getParentZone().getRoomList();
+			List<Room> roomList = zone.getRoomList();
 
 			int roomIndex = 0;
 			while(true)

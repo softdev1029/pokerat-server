@@ -14,6 +14,9 @@ public class DisconnectHandler extends BaseServerEventHandler
 		RoomExtension gameExt = (RoomExtension) getParentExtension();
 		User user = (User) event.getParameter(SFSEventParam.USER);
 		gameExt.leavePlayer(user.getName());
+		if (gameExt.getParentRoom().getUserList().size() == 0) {
+			gameExt.autoDeleteEmptyRoom();
+		}
 	}
 }
 

@@ -11,7 +11,8 @@ public class JoinHandler extends BaseClientRequestHandler
 	{
 		RoomExtension gameExt = (RoomExtension) getParentExtension();
 		if (user.isPlayer()) {
-			gameExt.joinNewPlayer(params);
+			if(gameExt.joinNewPlayer(params))
+				gameExt.autoCreateTexasRooms();
 //			gameExt.sendChipStatus(user.getName());
 		}
 	}

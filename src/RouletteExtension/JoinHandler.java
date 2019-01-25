@@ -12,6 +12,7 @@ public class JoinHandler extends BaseClientRequestHandler
 		RoomExtension gameExt = (RoomExtension) getParentExtension();
 		if (user.isPlayer()) {
 			gameExt.joinPlayer(params);
+			gameExt.autoCreateRouletteRooms();
 		}
 	}
 }

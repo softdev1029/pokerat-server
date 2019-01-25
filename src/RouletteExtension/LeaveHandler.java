@@ -12,6 +12,7 @@ public class LeaveHandler extends BaseClientRequestHandler
 		RoomExtension gameExt = (RoomExtension) getParentExtension();
 		if (user.isPlayer()) {
 			gameExt.leavePlayer(user.getName());
+
 		}
 	}
 }

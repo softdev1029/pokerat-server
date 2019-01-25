@@ -21,9 +21,15 @@ public class GetRoomListHandler extends BaseClientRequestHandler
 		zoneExt.whereis();
 		//////////////////////////
 		
-		int type = params.getInt("type");
-		long blind = params.getLong("blind");
-
-		zoneExt.updateRoomList(type,  blind, user);
+		int type = 0;
+		if(params.containsKey("type"))
+			type = params.getInt("type");
+		long blind = 0;
+		if(params.containsKey("blind"))
+			blind = params.getLong("blind");
+		if(type == 0)
+			TexasPokerExtension.RoomExtension.updateRoomList(zoneExt.getParentZone(), blind, user);
+		else if(type == 2)
+			RouletteExtension.RoomExtension.updateRoomList(zoneExt.getParentZone(), blind, user);
 	}
 }
